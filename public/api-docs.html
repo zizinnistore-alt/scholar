@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API DOCS // NEXUS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    <style>
+        :root {
+            --bg-body: #0f1115; --bg-card: #161920; --border: #2a2f3a; 
+            --text-main: #f1f5f9; --text-muted: #94a3b8; --accent: #3b82f6; --success: #10b981;
+            --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
+        }
+        :root {
+            --bg-body: #f8fafc; --bg-card: #ffffff; --border: #cbd5e1; 
+            --text-main: #0f172a; --text-muted: #64748b; --accent: #2563eb; --success: #059669;
+        }
+        body { background: var(--bg-body); color: var(--text-main); font-family: var(--font-main); margin: 0; transition: 0.3s; }
+        .container { max-width: 900px; margin: 40px auto; padding: 20px; }
+        .endpoint { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 30px; overflow: hidden; }
+        .ep-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; font-family: monospace; font-size: 1.1rem; }
+        .badge-get { background: rgba(59, 130, 246, 0.1); color: var(--accent); padding: 5px 10px; border-radius: 6px; font-weight: bold; font-family: var(--font-main); font-size: 0.85rem;}
+        .badge-post { background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 5px 10px; border-radius: 6px; font-weight: bold; font-family: var(--font-main); font-size: 0.85rem;}
+        .ep-body { padding: 20px; color: var(--text-muted); line-height: 1.6; }
+        pre { background: #0d0d12; color: #a5b4fc; padding: 15px; border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.9rem; border: 1px solid #1e1e2d; }
+    </style>
+</head>
+<body>
+    <div id="app-header"></div>
+    <div class="container">
+        <h1 style="font-family: var(--font-header); font-size: 2.5rem; margin-bottom: 10px;"><i class="fas fa-code"></i> NEXUS API V1</h1>
+        <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 1.1rem;">Integrate our AI-driven academic analysis engine directly into your applications.</p>
+
+        <div class="endpoint">
+            <div class="ep-header"><span class="badge-post">POST</span> /api/analyze</div>
+            <div class="ep-body">
+                <p>Analyzes an academic author using Semantic Scholar data and Gemini AI to generate a relevance report.</p>
+                <strong>Request Body (JSON)</strong>
+                <pre>{
+  "authorId": "123456789",
+  "userDescription": "Looking for experts in quantum cryptography."
+}</pre>
+                <strong>Response</strong>
+                <pre>{
+  "author": { "name": "John Doe", "hIndex": 45, ... },
+  "analysis": {
+    "match_score": 85,
+    "full_report": "...",
+    "key_technologies":
+  }
+}</pre>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="ep-header"><span class="badge-get">GET</span> /api/search?q={query}</div>
+            <div class="ep-body">
+                <p>Searches the global database for researchers matching the query string.</p>
+                <strong>Example</strong>
+                <pre>GET /api/search?q=machine+learning</pre>
+            </div>
+        </div>
+    </div>
+    <div id="app-footer"></div>
+    <script src="/js/layout.js"></script>
+</body>
+</html>

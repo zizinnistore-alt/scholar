@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABOUT // NEXUS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    <style>
+        :root {
+            --bg-body: #0f1115; --bg-card: #161920; --border: #2a2f3a; 
+            --text-main: #f1f5f9; --text-muted: #94a3b8; --accent: #3b82f6;
+            --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
+        }
+        :root {
+            --bg-body: #f8fafc; --bg-card: #ffffff; --border: #cbd5e1; 
+            --text-main: #0f172a; --text-muted: #64748b; --accent: #2563eb;
+        }
+        body { background: var(--bg-body); color: var(--text-main); font-family: var(--font-main); margin: 0; transition: 0.3s; }
+        .container { max-width: 1000px; margin: 40px auto; padding: 20px; }
+        .hero { text-align: center; margin-bottom: 50px; }
+        .hero i { font-size: 4rem; color: var(--accent); margin-bottom: 20px; }
+        .hero h1 { font-family: var(--font-header); font-size: 3rem; margin: 0; }
+        .hero p { color: var(--text-muted); font-size: 1.2rem; max-width: 600px; margin: 15px auto; line-height: 1.6; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); padding: 30px; border-radius: 16px; transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); border-color: var(--accent); }
+        .card i { font-size: 2rem; color: var(--accent); margin-bottom: 15px; }
+        .card h3 { font-family: var(--font-header); font-size: 1.5rem; margin: 0 0 10px 0; }
+        .card p { color: var(--text-muted); line-height: 1.6; margin: 0; }
+    </style>
+</head>
+<body>
+    <div id="app-header"></div>
+    <div class="container">
+        <div class="hero">
+            <i class="fas fa-atom"></i>
+            <h1>SCHOLAR NEXUS</h1>
+            <p>We are mapping the global academic landscape using AI to connect researchers, ideas, and opportunities faster than ever before.</p>
+        </div>
+
+        <div class="card" style="margin-bottom: 30px;">
+            <h3 style="color: var(--accent);">Our Mission</h3>
+            <p>To democratize academic intelligence. By combining large language models with real-time academic graphs, we provide unparalleled insights into who is building the future, what technologies are breaking through, and where the next big career opportunities lie.</p>
+        </div>
+
+        <h2 style="font-family: var(--font-header); text-align: center; margin-top: 50px;">OUR ECOSYSTEM</h2>
+        <div class="grid">
+            <div class="card">
+                <i class="fas fa-satellite-dish"></i>
+                <h3>Topic Explorer</h3>
+                <p>Convert vague ideas into precise academic keywords and map out the global experts dominating any niche.</p>
+            </div>
+            <div class="card">
+                <i class="fas fa-user-scan"></i>
+                <h3>Researcher Scanner</h3>
+                <p>Deep-dive into individual academic profiles, generating AI-powered reports on their expertise and collaboration networks.</p>
+            </div>
+            <div class="card">
+                <i class="fas fa-map-marked-alt"></i>
+                <h3>Global Jobs Map</h3>
+                <p>Find cutting-edge industry and academic positions filtered by region, track, and required seniority.</p>
+            </div>
+        </div>
+    </div>
+    <div id="app-footer"></div>
+    <script src="/js/layout.js"></script>
+</body>
+</html>

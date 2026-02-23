@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUTH // NEXUS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    <style>
+        :root {
+            --bg-body: #0f1115; --bg-card: #161920; --border: #2a2f3a; 
+            --text-main: #f1f5f9; --text-muted: #94a3b8; --accent: #3b82f6;
+            --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
+        }
+        :root {
+            --bg-body: #f8fafc; --bg-card: #ffffff; --border: #cbd5e1; 
+            --text-main: #0f172a; --text-muted: #64748b; --accent: #2563eb;
+        }
+        body { background: var(--bg-body); color: var(--text-main); font-family: var(--font-main); margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        .auth-container { display: flex; flex: 1; justify-content: center; align-items: center; padding: 20px; }
+        .auth-box { background: var(--bg-card); width: 100%; max-width: 450px; border-radius: 16px; border: 1px solid var(--border); padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .auth-header { text-align: center; margin-bottom: 30px; }
+        .auth-header h2 { font-family: var(--font-header); font-size: 2rem; margin: 0; color: var(--text-main); }
+        .auth-header p { color: var(--text-muted); margin-top: 5px; }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+        input, select { width: 100%; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); padding: 12px 15px; border-radius: 8px; font-family: var(--font-main); outline: none; transition: 0.3s; box-sizing: border-box; }
+        input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        
+        .btn-auth { background: var(--accent); color: #fff; border: none; padding: 14px; width: 100%; border-radius: 8px; font-family: var(--font-header); font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-auth:hover { background: #2563eb; transform: translateY(-2px); }
+        
+        .toggle-link { text-align: center; margin-top: 20px; color: var(--text-muted); font-size: 0.9rem; }
+        .toggle-link a { color: var(--accent); text-decoration: none; font-weight: 600; cursor: pointer; }
+        .error-msg { color: #ef4444; font-size: 0.85rem; text-align: center; margin-bottom: 15px; display: none; }
+    </style>
+</head>
+<body>
+    <div id="app-header"></div>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="auth-header">
+                <h2><i class="fas fa-fingerprint" style="color: var(--accent);"></i> <span id="title-text">LOGIN</span></h2>
+                <p id="sub-text">Welcome back to Scholar Nexus</p>
+            </div>
+            
+            <div class="error-msg" id="error-msg">Invalid credentials.</div>
+
+            <form id="auth-form" onsubmit="handleAuth(event)">
+                <div class="form-group" id="name-group" style="display: none;">
+                    <label>Full Name / Company Name</label>
+                    <input type="text" id="f-name" placeholder="John Doe">
+                </div>
+                
+                <div class="form-group" id="role-group" style="display: none;">
+                    <label>Account Type</label>
+                    <select id="f-role">
+                        <option value="user">Researcher / User</option>
+                        <option value="company">Company / Institution</option>
+                        <!-- Admin is hidden from public reg -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="f-email" required placeholder="name@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="f-password" required placeholder="••••••••">
+                </div>
+                
+                <button type="submit" class="btn-auth" id="btn-submit">SIGN IN</button>
+            </form>
+            
+            <div class="toggle-link">
+                <span id="toggle-text">Don't have an account?</span> 
+                <a onclick="toggleMode()" id="toggle-btn">Register here</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/layout.js"></script>
+    <script>
+        let isLogin = true;
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            document.getElementById('name-group').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('role-group').style.display = isLogin ? 'none' : 'block';
+            
+            document.getElementById('title-text').innerText = isLogin ? 'LOGIN' : 'CREATE ACCOUNT';
+            document.getElementById('sub-text').innerText = isLogin ? 'Welcome back to Scholar Nexus' : 'Join the global research network';
+            document.getElementById('btn-submit').innerText = isLogin ? 'SIGN IN' : 'REGISTER';
+            document.getElementById('toggle-text').innerText = isLogin ? "Don't have an account?" : "Already have an account?";
+            document.getElementById('toggle-btn').innerText = isLogin ? 'Register here' : 'Sign in here';
+            document.getElementById('error-msg').style.display = 'none';
+        }
+
+ async function handleAuth(e) {
+    e.preventDefault();
+    const email = document.getElementById('f-email').value;
+    const password = document.getElementById('f-password').value;
+    const name = document.getElementById('f-name').value;
+    const role = document.getElementById('f-role').value;
+    
+    const url = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const payload = isLogin ? { email, password } : { name, email, password, role };
+
+
+    const errEl = document.getElementById('error-msg');
+    errEl.style.display = 'none';
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if(res.ok) {
+            if(isLogin) {
+                
+                localStorage.setItem('nexus_token', data.token);
+                localStorage.setItem('nexus_user', JSON.stringify(data.user));
+                window.location.href = '/'; 
+            } else {
+                
+                alert(data.message); 
+                toggleMode(); 
+            }
+        } else {
+            errEl.innerText = data.error || "An error occurred";
+            errEl.style.display = 'block';
+        }
+    } catch(e) {
+        console.error(e);
+        const errEl = document.getElementById('error-msg');
+        errEl.innerText = "Connection Error";
+        errEl.style.display = 'block';
+    }
+}
+    
+    </script>
+</body>
+</html>

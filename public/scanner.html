@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCANNER // NEXUS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    
+    <style>
+        /* --- Dark/Light Mode --- */
+        :root {
+            --bg-body: #0f1115; --bg-card: #161920; --border: #2a2f3a; 
+            --text-main: #f1f5f9; --text-muted: #94a3b8; 
+            --accent: #3b82f6; --accent-hover: #2563eb; --success: #10b981;
+            --warning: #f59e0b; --danger: #ef4444;
+            --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
+        }
+
+        :root {
+            --bg-body: #f8fafc; --bg-card: #ffffff; --border: #cbd5e1; 
+            --text-main: #0f172a; --text-muted: #64748b; 
+            --accent: #2563eb; --accent-hover: #1d4ed8; --success: #059669;
+            --warning: #d97706; --danger: #dc2626;
+        }
+
+        body {
+            margin: 0; font-family: var(--font-main);
+            background: var(--bg-body); color: var(--text-main);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        .scanner-layout {
+            display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-top: 20px;
+            align-items: start;
+        }
+        @media (max-width: 900px) {
+            .scanner-layout { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            position: sticky; top: 90px;
+        }
+
+        .panel-title {
+            font-family: var(--font-header); font-size: 1.4rem; color: var(--text-main);
+            margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px;
+        }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block; font-size: 0.85rem; font-weight: 600; 
+            color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        
+        input, textarea {
+            width: 100%; background: var(--bg-body); border: 1px solid var(--border);
+            color: var(--text-main); padding: 12px 15px; border-radius: 8px;
+            font-family: var(--font-main); font-size: 0.95rem; outline: none; transition: 0.3s;
+            box-sizing: border-box;
+        }
+        textarea { resize: vertical; min-height: 100px; }
+        input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+
+        .btn-action {
+            background: var(--accent); color: #fff; border: none; padding: 15px;
+            width: 100%; border-radius: 8px; font-family: var(--font-header); font-size: 1.2rem;
+            font-weight: 700; cursor: pointer; transition: 0.3s;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-action:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 15px -5px var(--accent); }
+
+        .author-card-mini {
+            background: var(--bg-body); border: 1px solid var(--border); padding: 15px;
+            border-radius: 10px; margin-bottom: 12px; cursor: pointer; transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .author-card-mini:hover {
+            border-color: var(--accent); border-left-color: var(--accent);
+            transform: translateX(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .ac-name { font-weight: 700; color: var(--text-main); font-size: 1rem; margin-bottom: 5px; }
+        .ac-stats { font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; display: flex; gap: 15px; }
+        
+        .field-badge {
+            background: rgba(168, 85, 247, 0.1); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.2);
+            padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-block;
+        }
+
+        /* --- (Main View) --- */
+        .main-view { min-height: 60vh; padding-bottom: 40px; }
+
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-box {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+        .sb-val { font-size: 2rem; font-weight: 700; color: var(--text-main); font-family: var(--font-header); line-height: 1; margin-bottom: 5px; }
+        .sb-lbl { font-size: 0.8rem; color: var(--text-muted); letter-spacing: 0.5px; font-weight: 600; text-transform: uppercase; }
+
+        /*  (Match Container) */
+        .match-container {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--bg-card); border: 1px solid var(--border); padding: 25px;
+            border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .gauge-wrapper { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+        .gauge-circle { transform: rotate(-90deg); transform-origin: 50% 50%; }
+        .gauge-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 1.3rem; font-weight: 700; font-family: var(--font-header); color: var(--text-main);
+        }
+
+        .ai-report {
+            background: var(--bg-card); border: 1px solid var(--border); padding: 30px;
+            border-radius: 16px; line-height: 1.7; font-size: 0.95rem; color: var(--text-muted);
+            margin-bottom: 30px; position: relative;
+        }
+        .ai-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; color: var(--text-main); font-family: var(--font-header); font-size: 1.2rem; font-weight: 700; }
+        
+        .tech-tag {
+            display: inline-block; background: rgba(59, 130, 246, 0.1); color: var(--accent);
+            padding: 5px 12px; margin: 0 8px 8px 0; border-radius: 20px; border: 1px solid rgba(59, 130, 246, 0.2);
+            font-size: 0.8rem; font-weight: 600;
+        }
+
+        .section-title { font-family: var(--font-header); color: var(--text-main); font-size: 1.2rem; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .paper-row {
+            display: flex; gap: 15px; padding: 15px; border-bottom: 1px solid var(--border); transition: 0.2s;
+            background: var(--bg-body); border-radius: 8px; margin-bottom: 10px;
+        }
+        .paper-row:hover { border-color: var(--accent); }
+        .p-year { color: var(--accent); font-weight: 700; font-family: var(--font-header); font-size: 1.1rem; min-width: 45px; }
+        .p-title { color: var(--text-main); text-decoration: none; font-weight: 600; display: block; margin-bottom: 5px; }
+        .p-title:hover { color: var(--accent); }
+        .p-meta { font-size: 0.8rem; color: var(--text-muted); }
+
+        .network-row {
+            display: flex; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid var(--border);
+            background: var(--bg-body); border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div id="app-header"></div>
+
+    <div class="container">
+        <div class="scanner-layout">
+            
+           
+            <div class="panel">
+                <h2 class="panel-title"><i class="fas fa-user-scan" style="color:var(--accent)"></i> TARGET SCAN</h2>
+                
+                <div class="form-group">
+                    <label>TARGET RESEARCHER</label>
+                    <input type="text" id="q" placeholder="Enter author name..." onkeypress="if(event.key==='Enter') search()">
+                </div>
+                
+                <div class="form-group">
+                    <label>MISSION PARAMETERS (OPTIONAL)</label>
+                    <textarea id="desc" placeholder="Describe the specific topic, technology, or niche you are evaluating this expert for..."></textarea>
+                </div>
+
+                <button class="btn-action" onclick="search()">
+                    INITIATE SCAN <i class="fas fa-satellite-dish"></i>
+                </button>
+                
+                <div id="results-list" style="margin-top: 25px;"></div>
+            </div>
+
+            <!--(Main View) -->
+            <div class="main-view" id="main-view">
+                <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 50px 20px;">
+                    <div style="background: var(--bg-card); width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                        <i class="fas fa-fingerprint" style="font-size: 3rem; color: var(--accent); opacity: 0.8;"></i>
+                    </div>
+                    <h2 style="font-family: var(--font-header); color: var(--text-main); margin: 0 0 10px 0;">RESEARCHER SCANNER</h2>
+                    <p style="max-width: 400px; line-height: 1.6; margin: 0;">Search for a researcher on the left to analyze their publications, network, and relevance to your specific topic.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="app-footer"></div>
+
+    <script src="/js/layout.js"></script>
+    <script>
+        async function search() {
+            const query = document.getElementById('q').value;
+            if(!query) return;
+            const list = document.getElementById('results-list');
+            
+            list.innerHTML = `
+                <div style="text-align:center; padding: 20px; color: var(--accent);">
+                    <i class="fas fa-circle-notch fa-spin" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <div style="font-weight: 600; font-size: 0.9rem;">SCANNING DATABASE...</div>
+                </div>
+            `;
+            
+            try {
+                const res = await fetch(`/api/search?q=${query}`);
+                const data = await res.json();
+                list.innerHTML = '';
+                
+                if(data.length === 0) { 
+                    list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">No targets found.</div>'; 
+                    return; 
+                }
+                
+                data.forEach(a => {
+                    const div = document.createElement('div');
+                    div.className = 'author-card-mini';
+                    div.innerHTML = `
+                        <div class="ac-name">${a.name}</div>
+                        <div class="field-badge">${a.primaryField || 'Researcher'}</div>
+                        <div class="ac-stats">
+                            <span><i class="fas fa-chart-line" style="color:var(--success)"></i> H-Idx: ${a.hIndex}</span>
+                            <span><i class="fas fa-file-alt" style="color:var(--accent)"></i> Papers: ${a.paperCount}</span>
+                        </div>
+                    `;
+                    div.onclick = () => analyzeTarget(a.authorId);
+                    list.appendChild(div);
+                });
+            } catch (e) { 
+                list.innerHTML = '<div style="color:var(--danger); text-align:center; padding:20px;">Error contacting server.</div>'; 
+            }
+        }
+
+        async function analyzeTarget(id) {
+            const view = document.getElementById('main-view');
+            const desc = document.getElementById('desc').value;
+            
+            view.innerHTML = `
+                <div style="text-align:center; margin-top:100px;">
+                    <i class="fas fa-circle-notch fa-spin" style="font-size:3.5rem; color:var(--accent); margin-bottom:25px;"></i>
+                    <h2 style="font-family:var(--font-header); color:var(--text-main); margin:0 0 10px 0;">ANALYZING PROFILE...</h2>
+                    <p style="color:var(--text-muted);">Processing publications, citations, and AI matching score.</p>
+                </div>
+            `;
+            
+            try {
+                const res = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ authorId: id, userDescription: desc })
+                });
+                const data = await res.json();
+                const { author, analysis, collaborators } = data;
+                
+                let scoreColor = 'var(--danger)'; 
+                if(analysis.match_score >= 50) scoreColor = 'var(--warning)'; 
+                if(analysis.match_score >= 80) scoreColor = 'var(--success)';
+
+                view.innerHTML = `
+                    <!-- (Header) -->
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:25px; padding-bottom:20px; border-bottom:1px solid var(--border);">
+                        <div>
+                            <h1 style="margin:0; font-family:var(--font-header); font-size:2.2rem; color:var(--text-main);">${author.name}</h1>
+                            <div style="color:var(--text-muted); font-size:1rem; margin-top:8px; font-weight:500;">
+                                <i class="fas fa-layer-group" style="color:var(--accent); margin-right:5px;"></i> Primary Field: <span style="color:var(--text-main)">${author.primaryField}</span>
+                            </div>
+                        </div>
+                        <a href="${author.url}" target="_blank" class="btn-action" style="width:auto; padding:10px 20px; font-size:0.9rem; text-decoration:none;">
+                            View Profile <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+
+                    <div class="match-container" style="border-left: 4px solid ${scoreColor};">
+                        <div style="flex: 1; padding-right: 20px;">
+                            <div style="font-family:var(--font-header); font-size:1.2rem; font-weight:700; color:var(--text-main); margin-bottom:8px;">
+                                RELEVANCE MATCH
+                            </div>
+                            <div style="color:var(--text-muted); font-size:0.95rem; line-height:1.6;">
+                                ${analysis.match_reason}
+                            </div>
+                        </div>
+                        <div class="gauge-wrapper">
+                            <svg width="90" height="90">
+                                <circle cx="45" cy="45" r="38" stroke="var(--border)" stroke-width="8" fill="none"></circle>
+                                <circle cx="45" cy="45" r="38" stroke="${scoreColor}" stroke-width="8" fill="none" stroke-dasharray="239" stroke-dashoffset="${239 - (239 * analysis.match_score / 100)}" class="gauge-circle" style="transition: stroke-dashoffset 1.5s ease-out; stroke-linecap: round;"></circle>
+                            </svg>
+                            <div class="gauge-text">${analysis.match_score}%</div>
+                        </div>
+                    </div>
+
+                    <!--(Stats) -->
+                    <div class="dash-grid">
+                        <div class="stat-box">
+                            <div class="sb-val">${author.hIndex}</div>
+                            <div class="sb-lbl" style="color:var(--success)">H-Index</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="sb-val">${new Intl.NumberFormat().format(author.citationCount)}</div>
+                            <div class="sb-lbl" style="color:var(--accent)">Total Citations</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="sb-val">${author.paperCount}</div>
+                            <div class="sb-lbl" style="color:#a855f7">Publications</div>
+                        </div>
+                    </div>
+
+                    <div class="ai-report">
+                        <div class="ai-header"><i class="fas fa-robot" style="color:var(--accent)"></i> AI Expert Analysis</div>
+                        <div style="margin-bottom:20px;">
+                            ${analysis.key_technologies.map(t => `<span class="tech-tag">${t}</span>`).join('')}
+                        </div>
+                        <div id="report-text" style="color:var(--text-main)">
+                            ${analysis.full_report.replace(/\n/g, '<br><br>')}
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:30px;">
+                        
+                        <!-- Top Papers -->
+                        <div>
+                            <div class="section-title"><i class="fas fa-book-open" style="color:var(--accent)"></i> Top Transmissions</div>
+                            ${author.papers.slice(0, 10).map(p => `
+                                <div class="paper-row">
+                                    <span class="p-year">${p.year || 'N/A'}</span>
+                                    <div>
+                                        <a href="${p.url}" target="_blank" class="p-title">${p.title}</a>
+                                        <div class="p-meta">
+                                            <i class="fas fa-quote-right" style="color:var(--success)"></i> ${p.citationCount} citations 
+                                            &nbsp;&bull;&nbsp; ${p.venue || 'Journal'} 
+                                            &nbsp;&bull;&nbsp; ${p.fieldsOfStudy || 'General Science'}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- Network -->
+                        <div>
+                            <div class="section-title"><i class="fas fa-project-diagram" style="color:#a855f7"></i> Core Network</div>
+                            <div style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border);">
+                                ${collaborators.length > 0 
+                                    ? collaborators.map(c => `
+                                        <div class="network-row">
+                                            <span style="color:var(--text-main); font-weight:500;">${c}</span>
+                                            <span style="color:var(--accent); font-weight:700; background:rgba(59,130,246,0.1); padding:2px 8px; border-radius:12px; font-size:0.8rem;">${c}x</span>
+                                        </div>
+                                    `).join('') 
+                                    : '<div style="color:var(--text-muted); text-align:center; padding:10px;">No collaboration data available.</div>'
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+            } catch (e) { 
+                view.innerHTML = `
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 40px; text-align: center; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--danger); margin-bottom: 15px;"></i>
+                        <h3 style="margin: 0; color: var(--danger);">Analysis Failed</h3>
+                        <p style="color: var(--text-muted); margin-top: 10px;">Unable to fetch data for this researcher.</p>
+                    </div>
+                `; 
+            }
+        }
+
+        // --- Auto-Search Logic on Redirect  ---
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const autoId = urlParams.get('id');   
+            const autoName = urlParams.get('n');  
+            const autoQuery = urlParams.get('q');
+
+            if (autoName) {
+                document.getElementById('q').value = autoName;
+            } else if (autoQuery) {
+                document.getElementById('q').value = autoQuery;
+            }
+
+            if (autoId) {
+                analyzeTarget(autoId);
+            } else if (autoQuery) {
+                search();
+            }
+        }
+    </script>
+</body>
+</html>

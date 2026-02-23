@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONTACT // NEXUS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    <style>
+        :root {
+            --bg-body: #0f1115; --bg-card: #161920; --border: #2a2f3a; 
+            --text-main: #f1f5f9; --text-muted: #94a3b8; --accent: #3b82f6; --success: #10b981;
+            --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
+        }
+        :root {
+            --bg-body: #f8fafc; --bg-card: #ffffff; --border: #cbd5e1; 
+            --text-main: #0f172a; --text-muted: #64748b; --accent: #2563eb; --success: #059669;
+        }
+        body { background: var(--bg-body); color: var(--text-main); font-family: var(--font-main); margin: 0; transition: 0.3s; }
+        .container { max-width: 1200px; margin: 40px auto; padding: 20px; }
+        
+        .contact-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+        @media(max-width: 800px) { .contact-layout { grid-template-columns: 1fr; } }
+        
+        .contact-info { background: linear-gradient(135deg, rgba(59,130,246,0.1), transparent); padding: 50px; border-right: 1px solid var(--border); }
+        .contact-form { padding: 50px; position: relative; }
+        
+        .info-item { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; color: var(--text-muted); font-size: 1.1rem; }
+        .info-item i { color: var(--accent); font-size: 1.5rem; width: 30px; }
+        
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+        input, textarea { width: 100%; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); padding: 12px 15px; border-radius: 8px; font-family: var(--font-main); font-size: 0.95rem; outline: none; transition: 0.3s; box-sizing: border-box; margin-bottom: 20px; }
+        textarea { resize: vertical; min-height: 120px; }
+        input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        
+        .btn-submit { background: var(--accent); color: #fff; border: none; padding: 15px; width: 100%; border-radius: 8px; font-family: var(--font-header); font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .btn-submit:hover { background: #2563eb; transform: translateY(-2px); }
+
+        .success-msg { position: absolute; inset: 0; background: var(--bg-card); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.5s; }
+        .success-msg.show { opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body>
+    <div id="app-header"></div>
+    <div class="container">
+        <h1 style="font-family: var(--font-header); font-size: 2.5rem; text-align: center; margin-bottom: 40px;">GET IN TOUCH</h1>
+        
+        <div class="contact-layout">
+            <div class="contact-info">
+                <h2 style="font-family: var(--font-header); margin-top: 0;">Direct Contact</h2>
+                <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 40px;">Have questions about API integration, enterprise solutions, or removing your data? Our team is here to help.</p>
+                
+                <div class="info-item"><i class="fas fa-envelope"></i> info@scholarnexus.ai</div>
+                <div class="info-item"><i class="fas fa-map-marker-alt"></i> Cairo, Egypt (Global HQ)</div>
+                <div class="info-item"><i class="fab fa-twitter"></i> @ScholarNexus</div>
+            </div>
+            
+            <div class="contact-form">
+                <form id="c-form" onsubmit="submitForm(event)">
+                    <label>Your Name</label>
+                    <input type="text" required placeholder="Dr. John Doe">
+                    
+                    <label>Email Address</label>
+                    <input type="email" required placeholder="john@university.edu">
+                    
+                    <label>Message</label>
+                    <textarea required placeholder="How can we help you today?"></textarea>
+                    
+                    <button type="submit" class="btn-submit" id="btn-send">SEND MESSAGE</button>
+                </form>
+
+                <div class="success-msg" id="success">
+                    <i class="fas fa-check-circle" style="font-size: 4rem; color: var(--success); margin-bottom: 20px;"></i>
+                    <h2 style="font-family: var(--font-header); margin: 0;">Message Sent!</h2>
+                    <p style="color: var(--text-muted);">We will get back to you within 24 hours.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="app-footer"></div>
+    
+    <script src="/js/layout.js"></script>
+    <script>
+        function submitForm(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-send');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SENDING...';
+            btn.style.opacity = '0.7';
+            
+            setTimeout(() => {
+                document.getElementById('success').classList.add('show');
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

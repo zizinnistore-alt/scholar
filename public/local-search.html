@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOCAL DB SEARCH // NEXUS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    <!-- SweetAlert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Chart.js for Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-body: #0f1115; --bg-card: #161920; --border: #2a2f3a; 
+            --text-main: #f1f5f9; --text-muted: #94a3b8; 
+            --accent: #3b82f6; --accent-hover: #2563eb; --success: #10b981;
+            --warning: #f59e0b; --danger: #ef4444;
+            --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
+        }
+
+        /* Theme override for Light Mode handled by global.css, 
+           but we ensure specific dashboard elements adapt */
+
+        body { margin: 0; font-family: var(--font-main); background: var(--bg-body); color: var(--text-main); }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        /* Layout Grid */
+        .scanner-layout {
+            display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-top: 20px; align-items: start;
+        }
+        @media (max-width: 1100px) { .scanner-layout { grid-template-columns: 1fr; } }
+
+        /* Left Panel */
+        .panel {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            position: sticky; top: 90px; z-index: 10;
+        }
+
+        .panel-title { font-family: var(--font-header); font-size: 1.4rem; margin: 0 0 20px 0; display: flex; align-items: center; justify-content: space-between; }
+        
+        /* Inputs */
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+        input, select { width: 100%; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); padding: 12px 15px; border-radius: 8px; font-family: var(--font-main); box-sizing: border-box; outline:none; transition:0.3s;}
+        input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+
+        /* Results List */
+        .results-scroll { max-height: 500px; overflow-y: auto; padding-right: 5px; margin-top: 20px;}
+        .results-scroll::-webkit-scrollbar { width: 6px; }
+        .results-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        
+        .author-card-mini {
+            background: var(--bg-body); border: 1px solid var(--border); padding: 15px;
+            border-radius: 10px; margin-bottom: 12px; cursor: pointer; transition: all 0.3s;
+            border-left: 4px solid transparent;
+            position: relative;
+        }
+        .author-card-mini:hover { border-color: var(--accent); border-left-color: var(--accent); transform: translateX(5px); }
+        .ac-name { font-weight: 700; color: var(--text-main); font-size: 1rem; margin-bottom: 5px; }
+        .ac-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px;}
+        .field-badge { background: rgba(168, 85, 247, 0.1); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.2); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-top:5px;}
+
+        /* Main View Area */
+        .main-view { min-height: 60vh; padding-bottom: 40px; }
+        
+        /* DASHBOARD STYLES */
+        .dashboard-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;
+        }
+        .dash-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 20px; display: flex; flex-direction: column;
+        }
+        .dash-card.full-width { grid-column: span 3; }
+        .dash-card.two-thirds { grid-column: span 2; }
+        
+        .stat-number { font-size: 2.5rem; font-weight: 800; font-family: var(--font-header); color: var(--accent); line-height: 1; }
+        .stat-label { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+
+        .chart-container { position: relative; height: 250px; width: 100%; display: flex; align-items: center; justify-content: center; }
+
+        /* Detail View Styles */
+        .btn-action { display:inline-block; background: var(--accent); color: #fff; text-decoration: none; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-action:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        .section-title { font-family: var(--font-header); color: var(--text-main); font-size: 1.2rem; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .paper-row { display: flex; gap: 15px; padding: 15px; border-bottom: 1px solid var(--border); background: var(--bg-body); border-radius: 8px; margin-bottom: 10px; }
+        
+        /* Toggle Switch */
+        .view-toggle {
+            display: flex; gap: 10px; background: var(--bg-body); padding: 5px; border-radius: 8px; border: 1px solid var(--border);
+        }
+        .vt-btn {
+            flex: 1; border: none; background: none; color: var(--text-muted); padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem;
+        }
+        .vt-btn.active { background: var(--accent); color: white; }
+
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .dash-card.full-width, .dash-card.two-thirds { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-header"></div>
+
+    <div class="container">
+        <!-- Dashboard Toggle -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="font-family: var(--font-header); margin: 0; font-size: 2rem;">RESEARCH DATABASE</h1>
+            <div class="view-toggle">
+                <button class="vt-btn active" onclick="switchMode('list')" id="btn-list-mode"><i class="fas fa-list"></i> LIST</button>
+                <button class="vt-btn" onclick="switchMode('dashboard')" id="btn-dash-mode"><i class="fas fa-chart-pie"></i> DASHBOARD</button>
+            </div>
+        </div>
+
+        <div class="scanner-layout">
+            
+            <!-- SIDEBAR: FILTERS -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span><i class="fas fa-filter" style="color:var(--success)"></i> FILTERS</span>
+                    <button onclick="resetFilters()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.8rem;">RESET</button>
+                </div>
+                
+                <!-- Admin Upload Box -->
+                <div id="admin-upload-box" style="display:none; background: rgba(16, 185, 129, 0.05); border: 1px dashed var(--success); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                    <h4 style="margin:0 0 10px 0; color:var(--success); font-size:0.9rem;"><i class="fas fa-upload"></i> Update DB</h4>
+                    <input type="text" id="csv-topic" placeholder="Main Topic Name" style="padding:8px; font-size:0.8rem; margin-bottom:5px;">
+                    <input type="file" id="csv-file" accept=".xlsx, .xls, .csv" style="padding: 5px; font-size: 0.8rem;">
+                    <button onclick="uploadDatabase()" style="background:var(--success); color:#fff; width:100%; border:none; padding:8px; border-radius:6px; margin-top:5px; cursor:pointer;">UPLOAD CSV</button>
+                </div>
+
+                <div class="form-group">
+                    <label>MAIN TOPIC</label>
+                    <select id="filter-maintopic" onchange="runFilter()">
+                        <option value="">-- All Topics --</option>
+                    </select>
+                </div>
+
+                <!-- Autocomplete Datalists -->
+                <datalist id="suggestions-subtopic"></datalist>
+                <datalist id="suggestions-university"></datalist>
+
+                <div class="form-group">
+                    <label>SUBTOPIC / WORK DOMAIN</label>
+                    <input type="text" id="filter-subtopic" list="suggestions-subtopic" placeholder="Type to search..." oninput="runFilter()">
+                </div>
+
+                <div class="form-group">
+                    <label>UNIVERSITY</label>
+                    <input type="text" id="filter-university" list="suggestions-university" placeholder="Type to search..." oninput="runFilter()">
+                </div>
+
+                <div class="form-group">
+                    <label>RESEARCHER NAME</label>
+                    <input type="text" id="filter-researcher" placeholder="Name search..." oninput="runFilter()">
+                </div>
+
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right; margin-top: -10px; margin-bottom: 20px;">
+                    <span id="result-count">0</span> matches found
+                </div>
+
+                <!-- Compact Results for Sidebar -->
+                <div class="results-scroll" id="results-list">
+                    <!-- Items injected here -->
+                </div>
+            </div>
+
+            <!-- MAIN CONTENT: Views -->
+            <div class="main-view">
+                
+                <!-- VIEW 1: Researcher Details (Default) -->
+                <div id="view-details" style="display:block;">
+                    <div id="detail-content" style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 50px 20px; border: 2px dashed var(--border); border-radius: 16px;">
+                        <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.3;"></i>
+                        <h2 style="font-family: var(--font-header); color: var(--text-main);">SELECT A RESEARCHER</h2>
+                        <p>Click on a name from the list to view full profile, papers, and analysis.</p>
+                        <p style="font-size: 0.9rem; margin-top: 10px;">Or switch to <strong style="color:var(--accent)">Dashboard Mode</strong> for statistics.</p>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: Dashboard Analytics -->
+                <div id="view-dashboard" style="display:none;">
+                    <div class="dashboard-grid">
+                        <!-- Total Count -->
+                        <div class="dash-card">
+                            <div class="stat-number" id="dash-total">0</div>
+                            <div class="stat-label">Total Researchers</div>
+                        </div>
+                        <!-- Top Topic -->
+                        <div class="dash-card">
+                            <div class="stat-number" id="dash-top-topic" style="font-size: 1.5rem;">-</div>
+                            <div class="stat-label">Top Research Field</div>
+                        </div>
+                        <!-- Top Uni -->
+                        <div class="dash-card">
+                            <div class="stat-number" id="dash-top-uni" style="font-size: 1.5rem;">-</div>
+                            <div class="stat-label">Top University</div>
+                        </div>
+
+                        <!-- Charts Row -->
+                        <div class="dash-card two-thirds">
+                            <h3 style="font-family: var(--font-header); margin-top: 0;">University Distribution</h3>
+                            <div class="chart-container">
+                                <canvas id="chart-uni"></canvas>
+                            </div>
+                        </div>
+                        <div class="dash-card">
+                            <h3 style="font-family: var(--font-header); margin-top: 0;">Topics</h3>
+                            <div class="chart-container">
+                                <canvas id="chart-topic"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Work Domains Analysis -->
+                        <div class="dash-card full-width">
+                            <h3 style="font-family: var(--font-header); margin-top: 0;">Work Domain / Subtopic Frequency</h3>
+                            <div class="chart-container" style="height: 300px;">
+                                <canvas id="chart-subtopic"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <div id="app-footer"></div>
+
+    <script src="/js/layout.js"></script>
+
+<script>
+    // Global Data Holder
+    let allData = []; 
+    let filteredData = [];
+    let chartInstances = {};
+
+    // --- CONFIG: BLACKLIST ---
+    // Words to strip from University names or ignore in Charts
+    const IGNORED_LOCATIONS = [
+        "Egypt", "Saudi Arabia", "USA", "United States", "UK", "Germany", 
+        "Canada", "Japan", "China", "France", "Cairo", "Giza"
+    ];
+
+    window.onload = () => {
+        const user = JSON.parse(localStorage.getItem('nexus_user'));
+        if(user && user.role === 'admin') {
+            document.getElementById('admin-upload-box').style.display = 'block';
+        }
+        fetchMainTopics();
+        initialLoad();
+    };
+
+    // --- 1. INTELLIGENT DATA CLEANING ---
+    
+    function cleanAffiliation(raw) {
+        if (!raw) return "Unknown Affiliation";
+        let str = raw;
+
+        // Step 1: Remove Titles (Professor, Dr, etc.)
+        // Case insensitive replacement
+        const titles = ["Professor", "Assoc. Prof.", "Assistant Prof.", "Prof.", "Dr.", "Lecturer", "PhD Candidate", "Principal", "Eng.", "MSc"];
+        titles.forEach(t => {
+            // Remove "Professor of X" or just "Professor"
+            const reg = new RegExp(`^${t}\\s+(of\\s+.*?)?`, 'i'); 
+            str = str.replace(reg, '');
+            // Remove standalone title
+            const reg2 = new RegExp(`\\b${t}\\b`, 'gi'); 
+            str = str.replace(reg2, '');
+        });
+
+        // Step 2: Split by delimiters (" at ", " - ", ",")
+        // We prioritize "at" because it's usually "Role at University"
+        if (str.toLowerCase().includes(' at ')) {
+            const parts = str.split(/ at /i);
+            str = parts[1]; // Take the part after 'at'
+        } else if (str.includes(',')) {
+            const parts = str.split(',');
+            // Heuristic: Usually [Role, Uni, Country] or [Uni, Country]
+            // We want the University part.
+            // If part[0] is not a Country, take part[0], else part[1]
+            let candidate = parts[0].trim();
+            
+            // If the first part looks like a Country (e.g. "Egypt"), try the second part
+            if (IGNORED_LOCATIONS.some(loc => candidate.toLowerCase() === loc.toLowerCase())) {
+                str = parts[1] || candidate;
+            } else {
+                // If the first part is NOT a country, check if we should look further
+                // Often: "Professor, Ain Shams Uni" -> Take second
+                // Often: "Ain Shams Uni, Egypt" -> Take first
+                // If cleanAffiliation was called, Titles are gone. 
+                // So "Ain Shams Uni, Egypt" -> parts[0] is best.
+                str = parts[0]; 
+            }
+        }
+
+        // Step 3: Remove trailing Countries (e.g., "Ain Shams University Egypt" -> "Ain Shams University")
+        IGNORED_LOCATIONS.forEach(loc => {
+            const reg = new RegExp(`\\b${loc}\\b`, 'gi');
+            str = str.replace(reg, '');
+        });
+
+        // Step 4: Final Cleanup
+        str = str.replace(/[^\w\s&]/g, '').trim(); // Remove weird symbols
+        if (str.length < 3) return raw.split(',')[0]; // Fallback if we cleaned too much
+
+        return str;
+    }
+
+    // --- 2. CORE LOGIC ---
+
+    async function initialLoad() {
+        try {
+            // Fetches EVERYTHING now (Limit removed in backend)
+            const res = await fetch(`/api/local-researchers/filter`); 
+            allData = await res.json();
+            populateSuggestions(allData);
+            runFilter(); 
+        } catch (e) { console.error("Init Error", e); }
+    }
+
+    async function fetchMainTopics() {
+        try {
+            const res = await fetch('/api/local-researchers/main-topics');
+            const topics = await res.json();
+            const select = document.getElementById('filter-maintopic');
+            select.innerHTML = '<option value="">-- All Topics --</option>';
+            topics.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                select.appendChild(opt);
+            });
+        } catch (e) { console.error('Failed to load topics', e); }
+    }
+
+    function populateSuggestions(data) {
+        const unis = new Set();
+        const subs = new Set();
+
+        data.forEach(item => {
+            if (item.affiliation) {
+                const clean = cleanAffiliation(item.affiliation);
+                if(clean && clean !== "Unknown Affiliation") unis.add(clean);
+            }
+            if (item.subtopics) {
+                // Remove countries from subtopics if they appear there by mistake
+                item.subtopics.split(/[\/,]/).forEach(s => {
+                    let cleanS = s.trim();
+                    if(!IGNORED_LOCATIONS.some(loc => cleanS.toLowerCase() === loc.toLowerCase())) {
+                         subs.add(cleanS);
+                    }
+                });
+            }
+        });
+
+        document.getElementById('suggestions-university').innerHTML = Array.from(unis).sort().map(u => `<option value="${u}">`).join('');
+        document.getElementById('suggestions-subtopic').innerHTML = Array.from(subs).sort().map(s => `<option value="${s}">`).join('');
+    }
+
+    async function runFilter() {
+        const main_topic = document.getElementById('filter-maintopic').value;
+        const subtopic = document.getElementById('filter-subtopic').value;
+        const university = document.getElementById('filter-university').value;
+        const researcher = document.getElementById('filter-researcher').value;
+
+        const params = new URLSearchParams();
+        if (main_topic) params.append('main_topic', main_topic);
+        if (subtopic) params.append('subtopic', subtopic);
+        if (university) params.append('university', university);
+        if (researcher) params.append('researcher', researcher);
+
+        const list = document.getElementById('results-list');
+        list.innerHTML = '<div style="padding:10px; text-align:center;"><i class="fas fa-spinner fa-spin"></i></div>';
+
+        try {
+            const res = await fetch(`/api/local-researchers/filter?${params.toString()}`);
+            filteredData = await res.json();
+            
+            document.getElementById('result-count').innerText = filteredData.length;
+
+            if(filteredData.length === 0) { 
+                list.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding: 20px;">No matches.</div>'; 
+            } else {
+                list.innerHTML = filteredData.map(r => {
+                    const cleanUni = cleanAffiliation(r.affiliation);
+                    return `
+                    <div class="author-card-mini" onclick="analyzeLocal(${r.id})">
+                        <div class="ac-name">${r.name}</div>
+                        <div class="ac-meta"><i class="fas fa-university" style="font-size:0.7rem;"></i> ${cleanUni}</div>
+                        ${r.main_topic ? `<span class="field-badge">${r.main_topic}</span>` : ''}
+                    </div>
+                `}).join('');
+            }
+
+            if (document.getElementById('view-dashboard').style.display === 'block') {
+                updateDashboard();
+            }
+
+        } catch (e) { 
+            console.error(e);
+            list.innerHTML = '<div style="color:var(--danger); text-align:center;">Error loading data.</div>'; 
+        }
+    }
+
+    // --- 3. DASHBOARD LOGIC (With Strict Filtering) ---
+
+    function switchMode(mode) {
+        const listBtn = document.getElementById('btn-list-mode');
+        const dashBtn = document.getElementById('btn-dash-mode');
+        const detailView = document.getElementById('view-details');
+        const dashView = document.getElementById('view-dashboard');
+
+        if (mode === 'dashboard') {
+            listBtn.classList.remove('active');
+            dashBtn.classList.add('active');
+            detailView.style.display = 'none';
+            dashView.style.display = 'block';
+            updateDashboard();
+        } else {
+            listBtn.classList.add('active');
+            dashBtn.classList.remove('active');
+            detailView.style.display = 'block';
+            dashView.style.display = 'none';
+        }
+    }
+
+// --- 3. DASHBOARD LOGIC  ---
+
+    function updateDashboard() {
+        const total = filteredData.length;
+        const uniCounts = {};
+        const topicCounts = {};
+        const subCounts = {}; // This is for Work Domains
+
+        filteredData.forEach(d => {
+            // 1. Count Unis 
+            let uni = cleanAffiliation(d.affiliation);
+            if (uni && uni.length > 2) {
+                uniCounts[uni] = (uniCounts[uni] || 0) + 1;
+            }
+
+            // 2. Count Main Topics 
+            const topic = d.main_topic || "Uncategorized";
+            topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+
+            // 3. Count Work Domains / Subtopics 
+            
+            if (d.subtopics) {
+                
+                // Split by slash, comma, semicolon, or bullet points
+                const domains = d.subtopics.split(/[\/,;•]/); 
+                
+                domains.forEach(domain => {
+                    
+                    let cleanDomain = domain.trim();
+                    
+                    
+                    if(cleanDomain && cleanDomain.length > 1 && !IGNORED_LOCATIONS.some(loc => cleanDomain.toLowerCase() === loc.toLowerCase())) {
+                        
+                        
+                        subCounts[cleanDomain] = (subCounts[cleanDomain] || 0) + 1;
+                    }
+                });
+            }
+        });
+
+        // Sorting & Preparing Data
+        const sortedUnis = Object.entries(uniCounts).sort((a,b) => b[1] - a[1]);
+        const sortedTopics = Object.entries(topicCounts).sort((a,b) => b[1] - a[1]);
+        
+        
+        const sortedSubs = Object.entries(subCounts).sort((a,b) => b[1] - a[1]).slice(0, 20);
+
+        // Update Text Stats
+        document.getElementById('dash-total').innerText = total;
+        document.getElementById('dash-top-topic').innerText = sortedTopics.length > 0 ? sortedTopics[0][0] : '-';
+        document.getElementById('dash-top-uni').innerText = sortedUnis.length > 0 ? sortedUnis[0][0] : '-';
+
+        // Theme Colors
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const textColor = isDark ? '#f1f5f9' : '#111827';
+        const gridColor = isDark ? '#2a2f3a' : '#e5e7eb';
+
+        // Render Charts
+        renderChart('chart-uni', 'bar', sortedUnis.slice(0, 10), 'Universities', textColor, gridColor);
+        renderChart('chart-topic', 'doughnut', sortedTopics, 'Topics', textColor, gridColor);
+        
+        
+        renderChart('chart-subtopic', 'bar', sortedSubs, 'Work Domains (Detailed)', textColor, gridColor);
+    }
+
+
+    function renderChart(canvasId, type, dataEntries, label, textColor, gridColor) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+        const labels = dataEntries.map(e => e[0]);
+        const values = dataEntries.map(e => e[1]);
+        const bgColors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6'];
+
+        chartInstances[canvasId] = new Chart(ctx, {
+            type: type,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: values,
+                    backgroundColor: bgColors.slice(0, values.length),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: type === 'doughnut', labels: { color: textColor } },
+                    title: { display: false }
+                },
+                scales: type === 'bar' ? {
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } },
+                    x: { grid: { display: false }, ticks: { color: textColor } }
+                } : {}
+            }
+        });
+    }
+
+    // --- 4. DETAILS VIEW & CO-AUTHOR NETWORK ---
+
+    async function analyzeLocal(id) {
+        if (window.innerWidth < 900) document.getElementById('main-view').scrollIntoView({ behavior: 'smooth' });
+
+        const view = document.getElementById('detail-content');
+        view.innerHTML = `
+            <div style="text-align:center; margin-top:50px;">
+                <i class="fas fa-circle-notch fa-spin" style="font-size:3rem; color:var(--success); margin-bottom:20px;"></i>
+                <h3 style="color:var(--text-main);">Syncing with Live APIs...</h3>
+            </div>
+        `;
+        
+        try {
+            const res = await fetch('/api/local-researchers/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+            const data = await res.json();
+            renderProfile(data, view);
+        } catch (e) {
+            view.innerHTML = `<div style="color:var(--danger)">Analysis failed.</div>`;
+        }
+    }
+
+    function renderProfile(data, container) {
+        const { local, author, collaborators } = data;
+        const cleanUni = cleanAffiliation(local.affiliation);
+        
+        // Links
+        const gsLink = local.scholar_id 
+            ? (local.scholar_id.match(/^\d+$/) ? `https://www.semanticscholar.org/author/${local.scholar_id}` : `https://scholar.google.com/citations?user=${local.scholar_id}&hl=en`)
+            : null;
+
+        // Render Co-Authors (Network)
+        let networkHtml = '';
+        if (collaborators && collaborators.length > 0) {
+            networkHtml = `
+                <div class="section-title"><i class="fas fa-network-wired"></i> Top Co-Authors (Citation Network)</div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
+                    ${collaborators.map(c => `
+                        <a href="https://www.semanticscholar.org/author/${c.id}" target="_blank" 
+                           style="background:var(--bg-card); border:1px solid var(--border); padding:8px 12px; 
+                                  border-radius:20px; text-decoration:none; color:var(--text-main); font-size:0.85rem;
+                                  display:flex; align-items:center; gap:8px; transition:0.2s;">
+                            <i class="fas fa-user-friends" style="color:var(--accent);"></i>
+                            ${c.name}
+                            <span style="background:var(--bg-body); padding:2px 6px; border-radius:10px; font-size:0.7rem; color:var(--text-muted);">
+                                ${c.count}x
+                            </span>
+                        </a>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+             networkHtml = `
+                <div class="section-title"><i class="fas fa-network-wired"></i> Network</div>
+                <div style="color:var(--text-muted); font-style:italic;">No collaboration data found.</div>
+            `;
+        }
+
+        let statsHtml = '';
+        if (author) {
+            statsHtml = `
+                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin: 20px 0;">
+                    <div style="background:var(--bg-body); padding:10px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+                        <div style="font-size:1.5rem; font-weight:bold; color:var(--success)">${author.hIndex || '?'}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted)">H-Index</div>
+                    </div>
+                    <div style="background:var(--bg-body); padding:10px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+                        <div style="font-size:1.5rem; font-weight:bold; color:var(--accent)">${author.citationCount || '?'}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted)">Citations</div>
+                    </div>
+                    <div style="background:var(--bg-body); padding:10px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+                        <div style="font-size:1.5rem; font-weight:bold; color:#a855f7">${author.paperCount || '?'}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted)">Papers</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            <div style="text-align:left; width:100%;">
+                <div style="border-bottom:1px solid var(--border); padding-bottom:15px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <h1 style="margin:0; font-family:var(--font-header); font-size:2rem; color:var(--text-main);">${local.name}</h1>
+                        <div style="color:var(--text-muted); font-size:1rem; margin-top:5px;">
+                            <i class="fas fa-university" style="color:var(--accent);"></i> ${cleanUni}
+                        </div>
+                    </div>
+                     ${gsLink ? `<a href="${gsLink}" target="_blank" class="btn-action"><i class="fas fa-external-link-alt"></i> Profile</a>` : ''}
+                </div>
+
+                <div style="background:var(--bg-card); padding:15px; border-radius:10px; border:1px solid var(--border); margin-bottom:20px;">
+                    <div><strong style="color:var(--text-muted)">Topic:</strong> ${local.main_topic || 'N/A'}</div>
+                    <div style="margin-top:5px;"><strong style="color:var(--text-muted)">Domain:</strong> <span style="color:var(--accent)">${(local.subtopics || '').replace(/\//g, ' • ')}</span></div>
+                </div>
+
+                ${statsHtml}
+                
+                ${networkHtml}
+
+                <div class="section-title"><i class="fas fa-scroll"></i> Recent Publications</div>
+                <div style="max-height:300px; overflow-y:auto; padding-right:5px;">
+                    ${author && author.papers ? author.papers.slice(0, 8).map(p => `
+                        <div class="paper-row">
+                            <span style="color:var(--accent); font-weight:bold;">${p.year || '-'}</span>
+                            <div><a href="${p.url}" target="_blank" style="color:var(--text-main); font-weight:500; text-decoration:none;">${p.title}</a></div>
+                        </div>
+                    `).join('') : '<div style="color:var(--text-muted)">No paper data available.</div>'}
+                </div>
+            </div>
+        `;
+
+        document.getElementById('view-details').style.display = 'block';
+        document.getElementById('view-dashboard').style.display = 'none';
+        document.getElementById('btn-list-mode').classList.add('active');
+        document.getElementById('btn-dash-mode').classList.remove('active');
+    }
+
+    // --- UPLOAD LOGIC ---
+    async function uploadDatabase() {
+        const fileInput = document.getElementById('csv-file');
+        if(fileInput.files.length === 0) return Swal.fire('Error', 'Select file', 'error');
+        
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append('main_topic', document.getElementById('csv-topic').value);
+        formData.append('clear_db', 'false');
+
+        try {
+            const res = await fetch('/api/admin/upload-researchers', { method: 'POST', body: formData });
+            const data = await res.json();
+            if(res.ok) {
+                Swal.fire('Success', data.message, 'success');
+                fetchMainTopics(); 
+                initialLoad(); 
+            } else Swal.fire('Error', data.error, 'error');
+        } catch(e) { Swal.fire('Error', 'Failed', 'error'); }
+    }
+</script>
+</body>
+</html>

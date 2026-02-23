@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply // Nexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-body: #0f1115; --bg-card: #161920; --border: #2a2f3a; 
+            --text-main: #f1f5f9; --text-muted: #94a3b8; 
+            --accent: #3b82f6; --success: #10b981; --danger: #ef4444;
+            --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
+        }
+        body { margin: 0; background: var(--bg-body); color: var(--text-main); font-family: var(--font-main); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+        
+        .apply-card {
+            width: 100%; max-width: 600px; background: var(--bg-card);
+            border: 1px solid var(--border); border-radius: 16px; padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        .header h1 { font-family: var(--font-header); margin: 0; color: var(--accent); font-size: 2rem; }
+        .header p { margin: 5px 0 0; color: var(--text-muted); }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full-width { grid-column: 1 / -1; }
+
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+        input { 
+            width: 100%; background: var(--bg-body); border: 1px solid var(--border); 
+            color: var(--text-main); padding: 12px; border-radius: 8px; outline: none; 
+            box-sizing: border-box; transition: 0.3s;
+        }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+
+        /* Custom File Upload */
+        .file-drop-area {
+            border: 2px dashed var(--border); background: rgba(59, 130, 246, 0.05);
+            border-radius: 12px; padding: 30px; text-align: center; cursor: pointer;
+            transition: 0.3s; position: relative;
+        }
+        .file-drop-area:hover, .file-drop-area.active { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); }
+        .file-msg { color: var(--text-muted); font-size: 0.9rem; pointer-events: none; }
+        .file-input { position: absolute; left: 0; top: 0; height: 100%; width: 100%; opacity: 0; cursor: pointer; }
+
+        button {
+            background: var(--accent); color: white; border: none; padding: 15px; 
+            border-radius: 8px; width: 100%; font-weight: bold; font-family: var(--font-header);
+            font-size: 1.2rem; cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        button:hover { background: #2563eb; transform: translateY(-2px); }
+
+        .success-msg { display: none; text-align: center; padding: 40px; }
+        .success-msg i { font-size: 4rem; color: var(--success); margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="apply-card" id="card-container">
+        <div class="header">
+            <h1>APPLICATION PROTOCOL</h1>
+            <p>Target: <span id="job-title-display" style="color:white; font-weight:bold;">...</span></p>
+        </div>
+
+        <form id="app-form">
+            <div class="form-grid">
+                <!-- Hidden Job ID -->
+                <input type="hidden" id="job-id" name="jobId">
+
+                <div>
+                    <label>Full Name</label>
+                    <input type="text" id="app-name" required placeholder="Dr. Freeman">
+                </div>
+                <div>
+                    <label>Phone Number</label>
+                    <input type="tel" id="app-phone" required placeholder="+1 000 000 000">
+                </div>
+                <div class="full-width">
+                    <label>Email Address</label>
+                    <input type="email" id="app-email" required placeholder="gordon@blackmesa.com">
+                </div>
+                
+                <div class="full-width">
+                    <label>Curriculum Vitae (PDF/DOC)</label>
+                    <div class="file-drop-area" id="drop-area">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--accent); margin-bottom: 10px;"></i>
+                        <div class="file-msg" id="file-label">Drag & Drop or Click to Upload</div>
+                        <input class="file-input" type="file" id="cv-upload" accept=".pdf,.doc,.docx" required>
+                    </div>
+                </div>
+            </div>
+            <br>
+            <button type="submit" id="submit-btn">TRANSMIT DATA</button>
+        </form>
+    </div>
+
+    <!-- Success Screen -->
+    <div class="apply-card success-msg" id="success-screen">
+        <i class="fas fa-check-circle"></i>
+        <h2 style="font-family: var(--font-header);">TRANSMISSION COMPLETE</h2>
+        <p style="color: var(--text-muted);">Your application has been securely logged in the Nexus database.</p>
+    </div>
+
+    <script>
+        // 1. Populate Job Data from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const jobId = urlParams.get('id');
+        const jobTitle = urlParams.get('job');
+        
+        if(jobId) document.getElementById('job-id').value = jobId;
+        if(jobTitle) document.getElementById('job-title-display').innerText = jobTitle;
+
+        // 2. File Upload UI Logic
+        const fileInput = document.getElementById('cv-upload');
+        const dropArea = document.getElementById('drop-area');
+        const fileLabel = document.getElementById('file-label');
+
+        fileInput.addEventListener('change', (e) => {
+            if(fileInput.files.length > 0) {
+                fileLabel.innerText = "Selected: " + fileInput.files[0].name;
+                dropArea.classList.add('active');
+            }
+        });
+
+        // 3. Submit Logic
+        document.getElementById('app-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> UPLOADING...';
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('jobId', document.getElementById('job-id').value);
+            formData.append('applicantName', document.getElementById('app-name').value);
+            formData.append('applicantEmail', document.getElementById('app-email').value);
+            formData.append('applicantPhone', document.getElementById('app-phone').value);
+            formData.append('cv', fileInput.files[0]);
+
+            try {
+                const res = await fetch('/api/apply', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if(res.ok) {
+                    document.getElementById('card-container').style.display = 'none';
+                    document.getElementById('success-screen').style.display = 'block';
+                } else {
+                    alert('Error: ' + data.error);
+                    btn.innerText = "TRY AGAIN";
+                    btn.disabled = false;
+                }
+            } catch(err) {
+                alert('Connection Failed');
+                btn.innerText = "TRY AGAIN";
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

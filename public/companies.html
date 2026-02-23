@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMPANIES // SCHOLAR NEXUS</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Map Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="/css/global.css">
+
+    <style>
+        /* --- PAGE SPECIFIC STYLES --- */
+        body { background-color: var(--bg-body); }
+        
+        /* Header Area */
+        .page-header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px;
+        }
+        .page-title { font-family: var(--font-header); font-size: 2.5rem; margin: 0; color: var(--text-main); }
+        .page-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
+
+        /* Controls */
+        .controls-grid {
+            display: grid; grid-template-columns: 200px 1fr 200px auto; gap: 15px; margin-bottom: 30px;
+        }
+        
+        .control-btn {
+            background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);
+            padding: 0 15px; height: 50px; border-radius: 8px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; gap: 8px; font-weight: 600; transition: 0.3s;
+        }
+        .control-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .control-btn.active { background: rgba(59, 130, 246, 0.1); border-color: var(--accent); color: var(--accent); }
+
+        .search-input {
+            background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main);
+            height: 50px; padding: 0 15px; border-radius: 8px; width: 100%; outline: none;
+        }
+        .search-input:focus { border-color: var(--accent); }
+
+        select {
+            background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main);
+            height: 50px; padding: 0 15px; border-radius: 8px; cursor: pointer; outline: none;
+        }
+
+        /* Company Grid */
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+        .company-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; transition: 0.3s; cursor: pointer; display: flex; flex-direction: column;
+            position: relative; overflow: hidden; height: 100%;
+        }
+        .company-card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .logo-placeholder {
+            width: 50px; height: 50px; background: #fff; border-radius: 8px; padding: 5px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .logo-placeholder img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        
+        .cat-tag { font-size: 0.7rem; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); padding: 3px 8px; border-radius: 4px; height: fit-content; }
+
+        .co-name { font-family: var(--font-header); font-size: 1.4rem; margin: 0 0 5px 0; color: var(--text-main); }
+        .co-industry { font-size: 0.85rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 15px; flex-grow: 1; }
+
+        .co-footer {
+            border-top: 1px solid var(--border); padding-top: 12px; margin-top: auto;
+            font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 5px;
+        }
+        .branch-badge { background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+
+        /* Modal Styles */
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border); width: 700px; max-width: 95vw; height: 85vh; border-radius: 16px; display: flex; flex-direction: column; }
+        .modal-header { padding: 25px; border-bottom: 1px solid var(--border); display: flex; gap: 20px; align-items: center; }
+        .modal-body { padding: 25px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+
+        .link-btn {
+            flex: 1; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: 0.2s;
+        }
+        .link-web { background: var(--accent); color: white; }
+        .link-web:hover { background: var(--accent-hover); }
+        .link-li { background: #0077b5; color: white; }
+        .link-li:hover { filter: brightness(1.1); }
+        .link-disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; opacity: 0.5; }
+
+        /* Admin Box */
+        .admin-box { grid-column: 1 / -1; background: rgba(16, 185, 129, 0.05); border: 1px dashed var(--success); padding: 15px; border-radius: 8px; display: none; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="app-header"></div>
+
+    <div class="container">
+        
+        <!-- Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">GLOBAL COMPANIES</h1>
+                <div class="page-subtitle">Directory of VLSI, Embedded Systems, and Tech Companies.</div>
+            </div>
+            <div style="text-align: right;">
+                <span id="result-count" style="font-size: 1.5rem; font-weight: bold; color: var(--accent);">0</span>
+                <span style="color: var(--text-muted);"> Companies Found</span>
+            </div>
+        </div>
+
+        <!-- Admin Upload -->
+        <div id="admin-panel" class="admin-box">
+            <div>
+                <strong style="color: var(--success);"><i class="fas fa-database"></i> Database Update</strong>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Upload Excel with sheets (USA, Europe, etc). Columns: Company, Website, LinkedIn.</div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <input type="file" id="excel-file" accept=".xlsx, .xls" style="font-size: 0.8rem; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border); padding: 5px;">
+                <button onclick="uploadCompanies()" style="background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">UPLOAD</button>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-grid">
+            <button class="control-btn" id="map-trigger" onclick="openMapModal()">
+                <i class="fas fa-globe-americas"></i> <span id="map-label">Location (All)</span>
+            </button>
+            
+            <input type="text" id="q-search" class="search-input" placeholder="Search by Name, Industry, or Tech Stack..." onkeyup="fetchCompanies()">
+            
+            <select id="f-category" onchange="fetchCompanies()">
+                <option value="All">All Categories</option>
+            </select>
+
+            <button onclick="fetchCompanies()" style="height: 50px; width: 50px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); cursor: pointer;">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+
+        <!-- Grid -->
+        <div class="grid-layout" id="grid"></div>
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div class="modal-overlay" id="detail-modal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content: flex-end; padding: 10px;">
+                <button onclick="document.getElementById('detail-modal').style.display='none'" style="background:none; border:none; color:var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="modal-content-inject" style="display: flex; flex-direction: column; height: 100%;">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MAP MODAL -->
+    <div class="modal-overlay" id="map-modal">
+        <div class="modal-content" style="width: 80vw; height: 80vh;">
+            <div style="padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
+                <h3>Filter by Presence</h3>
+                <button onclick="closeMapModal()" style="background: var(--accent); color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">Done</button>
+            </div>
+            <div id="map-container" style="flex:1;"></div>
+        </div>
+    </div>
+
+    <div id="app-footer"></div>
+    <script src="/js/layout.js"></script>
+
+    <script>
+        let selectedCountries = [];
+        let map;
+        let geoLayer;
+
+        async function init() {
+            // Admin Check
+            const user = JSON.parse(localStorage.getItem('nexus_user'));
+            if(user && user.role === 'admin') document.getElementById('admin-panel').style.display = 'flex';
+
+            // Load Filters
+            const res = await fetch('/api/companies/filters');
+            const data = await res.json();
+            data.categories.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c; opt.innerText = c;
+                document.getElementById('f-category').appendChild(opt);
+            });
+
+            fetchCompanies();
+        }
+
+        async function fetchCompanies() {
+            const q = document.getElementById('q-search').value;
+            const cat = document.getElementById('f-category').value;
+            const country = selectedCountries.join(',');
+
+            const res = await fetch(`/api/companies?q=${q}&category=${cat}&country=${country}`);
+            const data = await res.json();
+            
+            document.getElementById('result-count').innerText = data.length;
+            renderGrid(data);
+        }
+
+        function renderGrid(data) {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+
+            if(data.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding: 50px; color: var(--text-muted);">No matches found.</div>';
+                return;
+            }
+
+            data.forEach(c => {
+                // Determine Branches Summary
+                const uniqueCountries = [...new Set(c.branches.map(b => b.country))];
+                const displayCountry = uniqueCountries.includes('United States') ? 'United States' : uniqueCountries[0];
+                const count = uniqueCountries.length;
+                
+                // Check if user filtered by a specific country, if so, does this company have a branch there?
+                // We highlight local presence.
+                const localPresence = c.branches.find(b => selectedCountries.includes(b.country)) || c.branches.find(b => b.country === 'Egypt'); // Default local highlight
+                
+                const card = document.createElement('div');
+                card.className = 'company-card';
+                card.onclick = () => openDetail(c);
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="logo-placeholder">
+                            <img src="${c.logo}" onerror="this.src='https://ui-avatars.com/api/?name=${c.name}&background=random'">
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="cat-tag">${c.category}</div>
+                            ${c.size && c.size !== 'N/A' ? `<div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px;"><i class="fas fa-users"></i> ${c.size}</div>` : ''}
+                        </div>
+                    </div>
+                    <h3 class="co-name">${c.name}</h3>
+                    <div class="co-industry">${c.industry}</div>
+                    
+                    <div class="co-footer">
+                        <div><i class="fas fa-globe"></i> HQ: ${c.hq_country}</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;">
+                            ${uniqueCountries.slice(0, 3).map(ct => `<span class="branch-badge">${ct}</span>`).join('')}
+                            ${uniqueCountries.length > 3 ? `<span class="branch-badge">+${uniqueCountries.length - 3}</span>` : ''}
+                        </div>
+                        ${localPresence ? `<div style="color:var(--success); margin-top:5px; font-weight:600;"><i class="fas fa-check-circle"></i> ${localPresence.presence || 'Local Presence'}</div>` : ''}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openDetail(c) {
+    // 1. Group branches by Region
+    const grouped = {};
+    c.branches.forEach(b => {
+        const reg = b.region || 'International';
+        if(!grouped[reg]) grouped[reg] = [];
+        grouped[reg].push(b);
+    });
+
+
+            // 2. Build Branches HTML
+    let branchesHtml = '';
+    for(const [region, locs] of Object.entries(grouped)) {
+        branchesHtml += `<div style="margin-bottom:15px;">
+            <div style="color:var(--accent); font-size:0.8rem; font-weight:bold; margin-bottom:5px; text-transform:uppercase;">${region}</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                ${locs.map(l => `
+                    <div style="background:var(--bg-body); padding:10px; border-radius:6px; border:1px solid var(--border);">
+                        <div style="font-weight:600; font-size:0.9rem;">
+                            ${l.state ? `<span style="color:var(--text-main)">${l.state}, </span>` : ''}${l.country}
+                            ${l.city ? `<span style="color:var(--text-muted); font-size:0.8rem;">(${l.city})</span>` : ''}
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:3px;">
+                            ${l.presence || 'Presence details not listed'}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+    }
+
+    // 3. Build Buttons & Handle Protocols
+    const hasWeb = c.website && c.website.length > 3;
+    const hasLi = c.linkedin && c.linkedin.length > 3;
+
+    let webLink = c.website || '';
+    if(hasWeb && !webLink.match(/^https?:\/\//i)) webLink = 'https://' + webLink;
+
+
+    let liLink = c.linkedin || '';
+    if(hasLi && !liLink.match(/^https?:\/\//i)) liLink = 'https://' + liLink;
+
+    const modal = document.getElementById('modal-content-inject');
+    modal.innerHTML = `
+        <div class="modal-header">
+            <img src="${c.logo}" onerror="this.src='https://ui-avatars.com/api/?name=${c.name}&background=random'" style="width:70px; height:70px; border-radius:10px; background:#fff; object-fit:contain; padding:5px;">
+            <div>
+                <h2 style="margin:0; font-family:var(--font-header); font-size:2rem;">${c.name}</h2>
+                <div style="color:var(--text-muted);">${c.category} &bull; ${c.size || 'Size N/A'}</div>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom:20px; background: rgba(59, 130, 246, 0.05); padding: 15px; border-radius: 8px; border-left: 3px solid var(--accent);">
+                <strong style="color:var(--text-main); display:block; margin-bottom:5px;">Industry Focus</strong>
+                <p style="color:var(--text-muted); margin:0; line-height: 1.5;">${c.industry || 'No industry details available.'}</p>
+            </div>
+            
+            <h4 style="font-family: var(--font-header); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">
+                <i class="fas fa-map-marked-alt"></i> Global Locations
+            </h4>
+            ${branchesHtml}
+        </div>
+        <div class="modal-footer">
+            ${hasWeb 
+                ? `<a href="${webLink}" target="_blank" class="link-btn link-web"><i class="fas fa-globe"></i> Visit Website</a>`
+                : `<button disabled class="link-btn link-disabled">No Website</button>`
+            }
+            ${hasLi 
+                ? `<a href="${liLink}" target="_blank" class="link-btn link-li"><i class="fab fa-linkedin"></i> LinkedIn Profile</a>`
+                : `<button disabled class="link-btn link-disabled">No LinkedIn</button>`
+            }
+        </div>
+    `;
+    document.getElementById('detail-modal').style.display = 'flex';
+}
+
+        /* --- MAP LOGIC --- */
+        function openMapModal() {
+            document.getElementById('map-modal').style.display = 'flex';
+            if(!map) {
+                map = L.map('map-container').setView([20, 0], 2);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: 'OSM' }).addTo(map);
+                
+                fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+                .then(r => r.json()).then(data => {
+                    geoLayer = L.geoJSON(data, {
+                        style: { color: '#333', weight: 1, fillColor: '#2a2a2a', fillOpacity: 0.7 },
+                        onEachFeature: (feature, layer) => {
+                            const name = feature.properties.name;
+                            // Basic mapping for known discrepancies
+                            const mapName = name === "United States of America" ? "United States" : name;
+
+                            layer.on('click', () => {
+                                if(selectedCountries.includes(mapName)) {
+                                    selectedCountries = selectedCountries.filter(c => c !== mapName);
+                                    geoLayer.resetStyle(layer);
+                                } else {
+                                    selectedCountries.push(mapName);
+                                    layer.setStyle({ fillColor: '#3b82f6', fillOpacity: 0.9 });
+                                }
+                            });
+                        }
+                    }).addTo(map);
+                });
+            } else {
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+        }
+
+        function closeMapModal() {
+            document.getElementById('map-modal').style.display = 'none';
+            document.getElementById('map-label').innerText = selectedCountries.length ? `Selected (${selectedCountries.length})` : 'Location (All)';
+            document.getElementById('map-trigger').classList.toggle('active', selectedCountries.length > 0);
+            fetchCompanies();
+        }
+
+        /* --- ADMIN UPLOAD --- */
+        async function uploadCompanies() {
+            const file = document.getElementById('excel-file').files[0];
+            if(!file) return Swal.fire('Error', 'Select a file', 'error');
+            
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('clear_db', 'true'); // Reset DB on upload
+
+            try {
+                const res = await fetch('/api/admin/upload-companies', { method:'POST', body:fd });
+                const d = await res.json();
+                if(d.success) { Swal.fire('Success', d.message, 'success'); fetchCompanies(); }
+                else Swal.fire('Error', d.error, 'error');
+            } catch(e) { Swal.fire('Error', 'Upload failed', 'error'); }
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOBS // NEXUS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    <style>
+        /* --- PAGE SPECIFIC STYLES --- */
+        .filter-bar {
+            background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border);
+            display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 15px; align-items: center; margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Map Button */
+        .map-trigger {
+            background: var(--bg-body); border: 1px solid var(--border); color: var(--text-muted);
+            padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; display: flex;
+            align-items: center; justify-content: center; gap: 10px; transition: 0.3s;
+            font-weight: 600; font-size: 0.9rem;
+        }
+        .map-trigger:hover { border-color: var(--accent); color: var(--accent); background: rgba(59, 130, 246, 0.05); }
+        .map-trigger.active { 
+            background: rgba(16, 185, 129, 0.1); border-color: var(--success); color: var(--success); 
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+        }
+
+        /* Jobs Grid */
+        .jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
+        
+        .job-card { 
+            background: var(--bg-card); border: 1px solid var(--border); padding: 25px; border-radius: 16px;
+            display: flex; flex-direction: column; gap: 15px; cursor: pointer; transition: all 0.3s ease;
+            position: relative; overflow: hidden;
+        }
+        .job-card:hover { transform: translateY(-7px); border-color: var(--accent); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); }
+        
+        /* Company Logo in Card */
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .co-logo-box { 
+            width: 55px; height: 55px; border-radius: 12px; background: #fff; 
+            display: flex; align-items: center; justify-content: center; padding: 5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .co-logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .job-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+        .tag { 
+            font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; font-weight: 600;
+            display: flex; align-items: center; gap: 5px; letter-spacing: 0.5px;
+        }
+        
+ 
+        .tag-seniority { 
+            color: #3b82f6; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); 
+        }
+        .tag-type { 
+            color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); 
+        }
+        .tag-track { 
+            color: #f59e0b; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); 
+        }
+        .tag-location {
+            color: #a855f7; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+        .tag.seniority { border-color: var(--accent); color: var(--accent); background: rgba(59, 130, 246, 0.1); }
+
+        /* --- MAP MODAL STYLING --- */
+        .modal-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            z-index: 2000; display: none; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; 
+        }
+        .modal-overlay.open { 
+    display: flex !important; 
+    opacity: 1 !important; 
+    pointer-events: auto;
+}
+        
+        .map-modal-content { 
+            background: var(--bg-card); width: 90vw; height: 85vh; border-radius: 20px; border: 1px solid var(--border);
+            display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* Real Map SVG Styling */
+        .world-map { width: 100%; height: 100%; background: var(--bg-body); }
+        .world-map path { 
+            fill: #2a2f3a; stroke: #1a1d26; stroke-width: 0.5; transition: 0.2s; cursor: pointer; 
+        }
+        .world-map path:hover { fill: #475569; }
+        /* Country has jobs (Subtle Highlight) */
+        .world-map path.has-jobs { fill: #334155; stroke: #475569; } 
+        /* Country Selected (Green Pin Effect) */
+        .world-map path.selected { 
+            fill: var(--success) !important; 
+            filter: drop-shadow(0 0 10px var(--success)); 
+            stroke: #fff; stroke-width: 1;
+        }
+
+        /* --- JOB DETAIL MODAL --- */
+        .detail-modal-content {
+            background: var(--bg-card); width: 700px; max-width: 95%; max-height: 90vh;
+            border-radius: 16px; border: 1px solid var(--border); overflow-y: auto;
+            position: relative; padding: 0;
+        }
+        .detail-header {
+            padding: 40px 40px 20px 40px; border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(59,130,246,0.05), transparent);
+        }
+        .detail-body { padding: 40px; line-height: 1.7; color: var(--text-muted); }
+        .req-list { list-style: none; padding: 0; }
+        .req-list li { 
+            margin-bottom: 10px; padding-left: 20px; position: relative; color: var(--text-main); 
+        }
+        .req-list li::before { 
+            content: '▹'; color: var(--accent); position: absolute; left: 0; font-weight: bold; 
+        }
+        
+        .apply-btn-lg {
+            width: 100%; padding: 15px; background: var(--accent); color: #fff; font-weight: 800;
+            border: none; border-radius: 8px; font-family: var(--font-header); font-size: 1.1rem;
+            cursor: pointer; transition: 0.3s; margin-top: 30px;
+        }
+        .apply-btn-lg:hover { background: var(--accent-hover); box-shadow: 0 0 20px var(--accent); }
+
+    </style>
+</head>
+<body>
+    
+    <div id="app-header"></div>
+
+    <div class="container">
+        <h1 style="font-family: var(--font-header); margin-bottom: 20px;">GLOBAL CAREER MAP</h1>
+        
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <!-- Map Trigger -->
+            <div class="map-trigger" onclick="openMapModal()" id="map-btn">
+                <i class="fas fa-map-marked-alt"></i> 
+                <span id="map-status">Select Countries (0)</span>
+                
+            </div>
+
+            <!-- Search -->
+            <input type="text" id="q-search" placeholder="Search position, stack..." 
+                   style="width:100%; padding:12px; background:var(--bg-body); border:1px solid var(--border); color:var(--text-main); border-radius:8px;" onkeyup="fetchJobs()">
+
+            <!-- Filters -->
+            <select id="f-track" onchange="fetchJobs()" 
+                    style="width:100%; padding:12px; background:var(--bg-body); border:1px solid var(--border); color:var(--text-main); border-radius:8px;">
+                <option value="All">All Disciplines</option>
+            </select>
+
+            <select id="f-company" onchange="fetchJobs()" 
+                    style="width:100%; padding:12px; background:var(--bg-body); border:1px solid var(--border); color:var(--text-main); border-radius:8px;">
+                <option value="All">All Companies</option>
+            </select>
+
+            <!-- Add Job Button (Hidden by default) -->
+            <button id="btn-add-job" onclick="openAddJobModal()" style="display:none; background:var(--accent); color:#fff; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">
+                <i class="fas fa-plus"></i> Add Job
+            </button>
+            
+            <div id="admin-management-section" style="display: none; margin-bottom: 30px; padding: 20px; border: 2px solid var(--accent); border-radius: 12px; background: rgba(59, 130, 246, 0.05);">
+                <h3 style="font-family: var(--font-header);"><i class="fas fa-users-cog"></i> Pending Approvals</h3>
+                <div id="pending-users-list" style="margin-top: 15px;">
+                    <p>No pending registration requests.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs Grid -->
+        <div class="jobs-grid" id="grid"></div>
+    </div>
+
+    <!-- jobs.html -->
+
+<!-- MAP MODAL -->
+<div class="modal-overlay" id="map-modal">
+    <div class="map-modal-content">
+        <!-- Header -->
+        <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
+            <h2 style="margin:0; font-family:var(--font-header); color:var(--text-main);">
+                <i class="fas fa-globe-africa" style="color:var(--accent)"></i> SELECT REGION
+            </h2>
+            <div style="display:flex; gap:10px">
+                <button class="btn-primary" onclick="closeMapModal()">CONFIRM</button>
+                <button onclick="closeMapModal()" style="background:transparent; border:1px solid var(--border); color:var(--text-main); padding:8px 20px; border-radius:6px; cursor:pointer;">Close</button>
+            </div>
+        </div>
+
+            <!-- The Map -->
+            <div class="map-svg-container">
+                <!-- REALISTIC SVG MAP -->
+                <!-- ViewBox calibrated for a standard Mercator projection -->
+                <!--                <svg class="world-map" viewBox="0 0 1009 665" xmlns="http://www.w3.org/2000/svg"> -->
+                <div id="map" style="width:100%; height:100%;"></div>        
+                    <!-- 1. Background (Rest of the World - Low Detail) -->
+                    <path d="M0 0h1009v665H0z" fill="none"/> <!-- Canvas -->
+                    
+                    <!-- 2. North America -->
+                    <g id="North_America">
+                        <!-- Canada -->
+                        <path id="CA" title="Canada" onclick="toggleCountry('CA')" d="M165.5 86.8c-2.4 2.4-7.6 1.9-8.7-2.7-3.4-14.2 11.5-17.7 20.2-19.8 12.8-3.1 27.6-6.1 40.8-7.9 14.5-2 29.5-.7 44.1.6 1.7.1 3.5.3 5.1 1.2 5.1 2.8 5.6 9.6 4.2 15.1-1.3 5.3-4.5 9.9-7.2 14.7-6.5 11.2-13.6 22-21.7 32.1-4 5-8.8 10.6-15.3 11.7-5.9 1-11.4-2.8-15.2-7.2-6.5-7.5-13-15.2-18.4-23.5-3.6-5.5-7.1-11.6-12.7-15.3-5.2-3.4-11.9-2.5-15.2 2.7z" />
+                        
+                        <!-- USA (Detailed) -->
+                        <path id="US" title="United States" onclick="toggleCountry('US')" d="M167.3 133.4c2.6-2.9 6.2-4.2 9.8-5.3 13.9-4.2 28.1-7.1 42.4-9.3 13.3-2 26.8-2.6 40.2-3.2 10.1-.4 20.3-.8 30.1 2.5 5.5 1.8 10.6 5.2 13.9 10.1 3.2 4.8 4.2 10.8 4.4 16.5.2 6.8-.7 13.7-3.3 19.9-3.9 9.3-10.4 17.3-17.7 24.5-5.9 5.8-12.5 10.9-20.2 14-6.6 2.6-14 3.3-21 2.1-14.2-2.5-27.1-10.6-38.6-18.9-8.4-6-16.1-13.1-22.3-21.6-4.5-6.2-7.8-13.6-8.9-21.3-.8-5.8.5-11.9 4.3-16.3 2.1-2.4 4.8-4.3 7.8-5.5z M60 120 l20 10 l-10 20 z" /> <!-- Including Alaska approx -->
+                    </g>
+
+                    <!-- 3. South America -->
+                    <g id="South_America">
+                        <!-- Brazil -->
+                        <path id="BR" title="Brazil" onclick="toggleCountry('BR')" d="M326.6 376.6c-4.4-6.1-5.7-14.1-3.6-21.4 2.9-10.2 10.8-18.1 19.3-24.3 10.6-7.7 22.8-12.9 35.6-15.7 8.3-1.8 17.1-2.2 25.1 1.4 6.7 3 11.4 9.4 13.4 16.5 2.5 8.9 1 18.6-2.5 27.2-5.4 13.3-14.5 24.8-25.2 34.3-7.5 6.6-16.1 12.1-25.8 14.8-9.1 2.5-19.3 1.3-27.1-4.3-7.1-5.1-10.7-14-9.2-22.5 1.1-6.2 5.1-11.6 9.8-15.6 2.8-2.4 5.9-4.5 9-6.5z"/>
+                    </g>
+
+                    <!-- 4. Europe -->
+                    <g id="Europe">
+                        <!-- United Kingdom -->
+                        <path id="GB" title="United Kingdom" onclick="toggleCountry('GB')" d="M485.4 148.2c-1.3-3.6.5-7.7 3.8-9.5 2.5-1.4 5.5-1.7 8.3-1.4 4.4.5 8.3 3.4 10.8 7.1 2.1 3.1 3 6.9 2.9 10.6-.1 3.5-1.3 7-3.7 9.6-2.3 2.5-5.6 3.9-8.9 3.9-3.9 0-7.7-2-10.2-5.1-2.4-3-3.5-7.1-3-10.9.1-1.3.4-2.6.9-3.8z"/>
+                        
+                        <!-- Germany -->
+                        <path id="DE" title="Germany" onclick="toggleCountry('DE')" d="M515 155 l15 0 l5 15 l-10 5 l-10 -5 z"/> <!-- Simplified for code size -->
+                        <path id="DE" onclick="toggleCountry('DE')" d="M508.8 153.3c3.8-1.5 8.1-.9 11.6 1.4 3.7 2.4 6.2 6.5 7.1 10.8 1 4.7-.3 9.7-3.4 13.4-2.9 3.5-7.3 5.6-11.8 5.7-4.4.1-8.7-1.8-11.8-4.9-3.4-3.4-5.3-8.2-5-13 .2-4.1 2.1-7.9 5.2-10.6 2.3-2 5.2-3.3 8.1-2.8z"/>
+
+                        <!-- France -->
+                        <path id="FR" title="France" onclick="toggleCountry('FR')" d="M480 160 c2-5 15-5 18 0 c2 8 -5 15 -10 15 c-8 0 -12 -10 -8 -15z"/>
+                    </g>
+
+                    <!-- 5. Africa & Middle East -->
+                    <g id="MENA">
+                        <!-- Egypt (Realistic) -->
+                        <path id="EG" title="Egypt" onclick="toggleCountry('EG')" d="M555.2 210.5c6.3 0 12.6-.1 18.9 0 3.3.1 6.8.5 9.4 2.8 3.1 2.7 4.1 7.1 4.5 11.2.6 6.3.2 12.7.2 19 0 1.9-.1 3.9-.9 5.7-1.4 3.2-5 5.1-8.4 5.3-6.6.4-13.2.1-19.8.1-1.8 0-3.7-.1-5.4-.8-3.4-1.5-5.3-5.2-5.7-8.9-.6-6.1-.2-12.3-.2-18.4 0-4.6 1.6-9.4 5.4-12.4 2.7-2.1 6.1-2.6 9.4-2.8 1.4-.1 2.9-.1 4.3-.1z"/>
+                        
+                        <!-- Saudi Arabia -->
+                        <path id="SA" title="Saudi Arabia" onclick="toggleCountry('SA')" d="M605 220 l25 0 l15 20 l-5 15 l-30 5 l-15 -20 z"/>
+                    </g>
+
+                    <!-- 6. Asia -->
+                    <g id="Asia">
+                        <!-- India -->
+                        <path id="IN" title="India" onclick="toggleCountry('IN')" d="M700 230 l30 0 l15 30 l-20 20 l-25 -10 z"/>
+                        
+                        <!-- China -->
+                        <path id="CN" title="China" onclick="toggleCountry('CN')" d="M720 150 l80 0 l10 40 l-30 20 l-50 -10 z"/>
+                    </g>
+
+                    <!-- 7. Oceania -->
+                    <g id="Oceania">
+                        <!-- Australia -->
+                        <path id="AU" title="Australia" onclick="toggleCountry('AU')" d="M850 400 c10-20 50-20 60 0 c5 30 -30 40 -50 30 c-10 -5 -15 -20 -10 -30z"/>
+                    </g>
+                    
+                    <!-- Placeholder for rest of world to make it look full -->
+                    <path d="M90,50 L140,50 L130,120 L80,110 Z" fill="#222" style="pointer-events:none; opacity:0.3"/> <!-- Russia placeholder -->
+                    <path d="M550,250 L600,250 L600,350 L550,320 Z" fill="#222" style="pointer-events:none; opacity:0.3"/> <!-- Africa placeholder -->
+
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- JOB DETAIL MODAL (The Popup) -->
+    <div class="modal-overlay" id="detail-modal">
+        <div class="detail-modal-content">
+            <button onclick="closeDetailModal()" style="position:absolute; top:20px; right:20px; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+            
+            <div class="detail-header">
+                <div style="display:flex; gap:20px; align-items:center;">
+                    <img id="d-logo" src="" style="width:80px; height:80px; border-radius:15px; background:#fff; object-fit:contain; padding:5px; box-shadow:0 5px 15px rgba(0,0,0,0.2);">
+                    <div>
+                        <h2 id="d-title" style="margin:0; font-family:var(--font-header); font-size:1.8rem; line-height:1.2;"></h2>
+                        <div id="d-company" style="color:var(--accent); font-weight:600; font-size:1.1rem; margin-top:5px;"></div>
+                        <div style="margin-top:10px; display:flex; gap:10px;">
+                            <span id="d-country" class="tag"><i class="fas fa-map-marker-alt"></i> </span>
+                            <span id="d-type" class="tag"><i class="fas fa-clock"></i> </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-body">
+                <h3 style="color:var(--text-main); font-family:var(--font-header);">About the Role</h3>
+                <p id="d-desc"></p>
+
+                <h3 style="color:var(--text-main); font-family:var(--font-header); margin-top:30px;">Requirements</h3>
+                <ul id="d-reqs" class="req-list">
+                    <!-- Requirements injected here -->
+                </ul>
+
+                <h3 style="color:var(--text-main); font-family:var(--font-header); margin-top:30px;">Key Details</h3>
+                <div style="display:flex; flex-wrap:wrap; gap:15px;">
+                    <div style="background:var(--bg-body); padding:10px 20px; border-radius:8px; border:1px solid var(--border); flex: 1; min-width: 120px;">
+                        <small style="display:block; color:var(--text-muted);">Seniority</small>
+                        <strong style="color:var(--text-main);" id="d-seniority"></strong>
+                    </div>
+                    <div style="background:var(--bg-body); padding:10px 20px; border-radius:8px; border:1px solid var(--border); flex: 1; min-width: 120px;">
+                        <small style="display:block; color:var(--text-muted);">Location</small>
+                        <strong style="color:var(--text-main);" id="d-loc-tag"></strong>
+                    </div>
+                    <div style="background:var(--bg-body); padding:10px 20px; border-radius:8px; border:1px solid var(--border); flex: 1; min-width: 120px;">
+                        <small style="display:block; color:var(--text-muted);">Job Type</small>
+                        <strong style="color:var(--text-main);" id="d-type-tag"></strong>
+                    </div>
+                    <div style="background:var(--bg-body); padding:10px 20px; border-radius:8px; border:1px solid var(--border); flex: 1; min-width: 120px;">
+                        <small style="display:block; color:var(--text-muted);">Discipline</small>
+                        <strong style="color:var(--text-main);" id="d-track-tag"></strong>
+                    </div>
+                </div>
+
+            
+                <button id="btn-apply" class="apply-btn-lg">APPLY FOR POSITION</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-footer"></div>
+
+
+
+<!-- 1. APPLY MODAL (For Candidates) -->
+<div class="modal-overlay" id="apply-modal">
+    <div class="detail-modal-content" style="width: 700px; height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
+        <div style="padding: 15px 25px; background: var(--bg-card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin:0; font-family: var(--font-header); color: var(--accent);">APPLICATION FORM</h3>
+            <button onclick="document.getElementById('apply-modal').classList.remove('open')" style="background:none; border:none; color:var(--text-muted); font-size:1.8rem; cursor:pointer;">&times;</button>
+        </div>
+        <iframe id="apply-iframe" src="" style="width: 100%; flex-grow: 1; border: none; background: var(--bg-body);"></iframe>
+    </div>
+</div>
+
+<!-- 2. APPLICANTS MODAL (For Employers - You added this recently) -->
+<div class="modal-overlay" id="applicants-modal">
+    <!-- ... (Keep your existing applicants modal code here) ... -->
+    <div class="detail-modal-content" style="width: 900px; height: 85vh; display: flex; flex-direction: column;">
+        <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
+            <h2 style="margin:0; font-family:var(--font-header); color:var(--text-main);">APPLICANTS</h2>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="downloadExcel()" style="background:var(--success); color:#fff; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">EXPORT CSV</button>
+                <button onclick="document.getElementById('applicants-modal').classList.remove('open')" style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+        </div>
+        <div style="padding: 20px; overflow-y: auto; flex: 1;">
+            <table style="width: 100%; border-collapse: collapse; color: var(--text-main); font-size: 0.9rem;">
+                <tbody id="applicants-table-body"></tbody>
+            </table>
+            <p id="no-applicants-msg" style="text-align: center; color: var(--text-muted); display: none;">No applications yet.</p>
+        </div>
+    </div>
+</div>
+
+
+    <!-- ADD JOB MODAL -->
+    <div class="modal-overlay" id="add-job-modal">
+        <div class="detail-modal-content" style="padding: 30px; width: 600px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom: 20px;">
+                <h2 style="margin:0; font-family:var(--font-header); color:var(--accent);">POST NEW JOB</h2>
+                <button onclick="document.getElementById('add-job-modal').classList.remove('open')" style="background:none; border:none; color:var(--text-main); font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            
+            <form id="add-job-form" onsubmit="submitNewJob(event)" style="display:grid; gap:15px;">
+                <input type="text" id="aj-title" required placeholder="Job Title (e.g. AI Engineer)" style="padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main);">
+                <input type="text" id="aj-country" required placeholder="Country (e.g. Egypt)" style="padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main);">
+                <input type="text" id="aj-code" required placeholder="Country Code (e.g. EG, US, GB)" style="padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main);">
+                
+                <div style="display:flex; gap:10px;">
+                    <select id="aj-track" style="flex:1; padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main);">
+                        <option value="Computer Science & AI">CS & AI</option>
+                        <option value="Biotechnology">Biotechnology</option>
+                        <option value="Engineering">Engineering</option>
+                    </select>
+                    <select id="aj-seniority" style="flex:1; padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main);">
+                        <option value="Junior">Junior</option>
+                        <option value="Mid-Level">Mid-Level</option>
+                        <option value="Senior">Senior</option>
+                        <option value="Lead">Lead</option>
+                    </select>
+                </div>
+
+                <textarea id="aj-desc" required placeholder="Job Description..." style="padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main); min-height:80px;"></textarea>
+                <input type="text" id="aj-reqs" placeholder="Requirements (Separate by | e.g. Python|React|SQL)" style="padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main);">
+                
+                <input type="text" id="aj-link" placeholder="External Application Link (Optional - overrides internal form)" style="padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main);">
+
+
+                <button type="submit" style="background:var(--success); color:#fff; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1.1rem; margin-top:10px;">POST JOB</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/layout.js"></script>
+    <script>
+        const currentUser = JSON.parse(localStorage.getItem('nexus_user'));
+        let selectedCountries = [];
+        let countryLayers = {};
+        const iso3to2 = {
+            USA: "US", CAN: "CA", MEX: "MX", BRA: "BR", ARG: "AR", CHL: "CL", COL: "CO", PER: "PE",
+            GBR: "GB", DEU: "DE", FRA: "FR", ITA: "IT", ESP: "ES", NLD: "NL", SWE: "SE", CHE: "CH",
+            NOR: "NO", DNK: "DK", FIN: "FI", BEL: "BE", AUT: "AT", POL: "PL", PRT: "PT", GRC: "GR",
+            CZE: "CZ", ROU: "RO", HUN: "HU", IRL: "IE", UKR: "UA", RUS: "RU", TUR: "TR", ISR: "IL",
+            EGY: "EG", SAU: "SA", ARE: "AE", QAT: "QA", KWT: "KW", OMN: "OM", BHR: "BH", JOR: "JO",
+            LBN: "LB", MAR: "MA", DZA: "DZ", TUN: "TN", IRQ: "IQ", ZAF: "ZA", NGA: "NG", KEN: "KE",
+            GHA: "GH", SEN: "SN", CIV: "CI", IND: "IN", CHN: "CN", JPN: "JP", KOR: "KR", SGP: "SG",
+            MYS: "MY", IDN: "ID", PHL: "PH", THA: "TH", VNM: "VN", PAK: "PK", BGD: "BD", LKA: "LK",
+            AUS: "AU", NZL: "NZ", TWN: "TW", HKG: "HK", MAC: "MO"
+        };
+        let allJobs = []; // Store fetched jobs to find details later
+
+        // --- INIT ---
+        async function init() {
+            const res = await fetch('/api/job-filters');
+            const data = await res.json();
+            
+            // Populate Filters
+            data.tracks.forEach(t => document.getElementById('f-track').innerHTML += `<option>${t}</option>`);
+            data.companies.forEach(c => document.getElementById('f-company').innerHTML += `<option>${c}</option>`);
+            
+            // Highlight Map Regions with Jobs
+            data.activeCodes.forEach(code => {
+                const el = document.getElementById(code);
+                if(el) el.classList.add('has-jobs');
+            });
+
+            fetchJobs();
+        }
+
+        // --- MAP LOGIC ---
+        function openMapModal() {
+            document.getElementById('map-modal').classList.add('open');
+
+            setTimeout(() => {
+                if (!map) {
+                    initMap();
+                } else {
+                    map.invalidateSize();
+                }
+            }, 200);
+        }
+        function closeMapModal() { document.getElementById('map-modal').classList.remove('open'); fetchJobs(); }
+
+        function toggleCountry(code) {
+            const el = document.getElementById(code);
+            if(selectedCountries.includes(code)) {
+                selectedCountries = selectedCountries.filter(c => c !== code);
+                el.classList.remove('selected');
+            } else {
+                selectedCountries.push(code);
+                el.classList.add('selected');
+            }
+            // Update Button Text
+            const btn = document.getElementById('map-btn');
+            const txt = document.getElementById('map-status');
+            if(selectedCountries.length > 0) {
+                btn.classList.add('active');
+                txt.innerText = `Selected (${selectedCountries.length})`;
+            } else {
+                btn.classList.remove('active');
+                txt.innerText = 'Select Countries (0)';
+            }
+        }
+
+        // --- FETCH & RENDER ---
+        async function fetchJobs() {
+            const track = document.getElementById('f-track').value;
+            const company = document.getElementById('f-company').value;
+            const q = document.getElementById('q-search').value;
+
+            const res = await fetch('/api/jobs/query', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ countries: selectedCountries, track, company, q })
+            });
+            const jobs = await res.json();
+            allJobs = jobs; // Store for modal usage
+
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+
+            if(jobs.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px; color:var(--text-muted)">No jobs found. Try adjusting filters.</div>';
+                return;
+            }
+
+            jobs.forEach(j => {
+                // Determine Local Logo Path
+                // Convert "DeepMind" -> "DeepMind.png", "Google Cloud" -> "GoogleCloud.png"
+                const cleanName = j.company.replace(/\s+/g, ''); 
+                const logoPath = `/clogos/${cleanName}.png`;
+                const isOwner = currentUser && (currentUser.id === j.owner_id || currentUser.role === 'admin');
+
+                //  buttons based on ownership
+                let ownerControls = '';
+                if (isOwner) {
+                    // Safe quote escaping for the title
+                    const safeTitle = j.title.replace(/'/g, "\\'"); 
+                    
+                    ownerControls = `
+                        <div style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px; display:flex; gap:10px;">
+                            <button onclick="deleteJob(${j.id}, event)" style="background:var(--danger, #ef4444); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">Delete</button>
+                            <button onclick="viewApplicants(${j.id}, '${safeTitle}', event)" style="background:var(--accent); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">View Applicants</button>
+                        </div>
+                    `;
+                }
+
+
+                const card = document.createElement('div');
+                card.className = 'job-card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="co-logo-box">
+                            <img src="${logoPath}" onerror="this.src='https://via.placeholder.com/50?text=CO'">
+                        </div>
+                        <span class="badge">${j.country_code}</span>
+                    </div>
+                    <div>
+                        <h3 style="margin:0; font-family:var(--font-header); font-size:1.2rem;">${j.title}</h3>
+                        <div style="color:var(--text-muted); font-size:0.9rem">${j.company}</div>
+                    </div>
+                    <div class="job-tags">
+                        <span class="tag tag-seniority"><i class="fas fa-medal"></i> ${j.seniority || 'Mid-Level'}</span>
+                        <span class="tag tag-type"><i class="fas fa-briefcase"></i> ${j.type}</span>
+                        <span class="tag tag-track"><i class="fas fa-code"></i> ${j.track.split(' ')}</span>
+                        <span class="tag tag-location"><i class="fas fa-globe"></i> ${j.country_code}</span>
+                    </div>
+                    ${ownerControls} 
+                `;
+                card.onclick = (e) => {
+                    // If the click target was a button, don't open details
+                    if(e.target.tagName === 'BUTTON') return;
+                    openDetailModal(j, logoPath);
+                };
+                grid.appendChild(card);
+            });
+        }
+
+        // --- DETAILS MODAL ---
+function openDetailModal(job, logoPath) {
+    // 1. Populate Text Data
+    document.getElementById('d-title').innerText = job.title;
+    document.getElementById('d-company').innerText = job.company;
+    document.getElementById('d-logo').src = logoPath;
+    document.getElementById('d-country').innerHTML = `<i class="fas fa-map-marker-alt"></i> ${job.country}`;
+    document.getElementById('d-type').innerHTML = `<i class="fas fa-clock"></i> ${job.type}`;
+    document.getElementById('d-desc').innerText = job.description;
+
+    // 2. Populate Tags
+    document.getElementById('d-seniority').innerText = job.seniority || 'Not Specified';
+    document.getElementById('d-loc-tag').innerText = job.country || 'Remote';
+    document.getElementById('d-type-tag').innerText = job.type || 'Full-Time';
+    document.getElementById('d-track-tag').innerText = job.track || 'General';
+
+    // 3. Populate Requirements
+    const reqList = document.getElementById('d-reqs');
+    reqList.innerHTML = '';
+    if (job.requirements) {
+        job.requirements.split('|').forEach(r => {
+            const li = document.createElement('li');
+            li.innerText = r.trim();
+            reqList.appendChild(li);
+        });
+    } else {
+        reqList.innerHTML = '<li>See description.</li>';
+    }
+
+    // 4. HANDLE APPLY BUTTON LOGIC
+    const applyBtn = document.getElementById('btn-apply');
+    
+    // IMPORTANT: Clone button to remove old event listeners from previous opens
+    const newBtn = applyBtn.cloneNode(true);
+    applyBtn.parentNode.replaceChild(newBtn, applyBtn);
+
+    // Check if it's an External Link
+    if (job.apply_link && job.apply_link.trim() !== "") {
+        console.log("External Link Detected");
+        newBtn.innerHTML = 'APPLY ON COMPANY SITE <i class="fas fa-external-link-alt"></i>';
+        newBtn.onclick = function() {
+            let url = job.apply_link.trim();
+            if (!url.match(/^https?:\/\//i)) url = 'https://' + url;
+            window.open(url, '_blank');
+        };
+    } 
+    // Internal Application
+    else {
+        console.log("Internal Application");
+        newBtn.innerHTML = 'APPLY FOR POSITION';
+        newBtn.onclick = function() {
+            const applyUrl = `/apply.html?id=${job.id}&job=${encodeURIComponent(job.title)}`;
+            
+            const modal = document.getElementById('apply-modal');
+            const iframe = document.getElementById('apply-iframe');
+            
+            if (modal && iframe) {
+                iframe.src = applyUrl;
+                modal.classList.add('open');
+            } else {
+                alert("Error: Apply Modal not found in HTML.");
+            }
+        };
+    }
+
+    // Open the Detail Modal
+    document.getElementById('detail-modal').classList.add('open');
+}
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.remove('open');
+        }
+
+        init();
+
+
+
+        let map;
+let geoLayer;
+
+async function initMap() {
+    map = L.map('map', {
+        worldCopyJump: true,
+        minZoom: 2,
+        maxZoom: 6
+    }).setView([20, 0], 2);
+
+    L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        { attribution: '&copy; OpenStreetMap' }
+    ).addTo(map);
+
+    // Add Palestine manually
+const palestine = L.polygon([ 
+    [33.35, 35.55],  
+    [33.30, 35.20],
+    [32.90, 35.00],
+    [32.50, 34.95],
+    [32.10, 35.05],
+    [31.70, 35.30],  
+    [31.30, 35.45],
+    [30.90, 34.90],  
+    [31.00, 34.45],
+    [31.40, 34.20],  
+    [31.90, 34.25],
+    [32.60, 34.50],
+    [33.00, 35.00]
+], {
+    color: "#1a1d26",
+    fillColor: "#2a2f3a",
+    fillOpacity: 0.8
+}).addTo(map);
+
+countryLayers["PS"] = palestine;
+
+palestine.on("click", function () {
+    toggleCountrySelection("PS");
+});
+
+palestine.bindTooltip("Palestine");
+
+    const res = await fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json');
+    const data = await res.json();
+
+    geoLayer = L.geoJSON(data, {
+        style: function () {
+            return {
+                color: "#1a1d26",
+                weight: 1,
+                fillColor: "#2a2f3a",
+                fillOpacity: 0.8
+            };
+        },
+onEachFeature: function (feature, layer) {
+
+    const iso3 = feature.id;
+
+    // Hide Israel
+    if (iso3 === "ISR") return;
+
+    const iso2 = iso3to2[iso3];
+    if (!iso2) return;
+
+    countryLayers[iso2] = layer;
+
+    layer.on({
+        mouseover: function (e) {
+            if (!selectedCountries.includes(iso2)) {
+                e.target.setStyle({ fillColor: "#475569" });
+            }
+        },
+        mouseout: function (e) {
+            if (!selectedCountries.includes(iso2)) {
+                geoLayer.resetStyle(e.target);
+            }
+        },
+        click: function () {
+            toggleCountrySelection(iso2);
+        }
+    });
+
+    layer.bindTooltip(feature.properties.name, {
+        permanent: false,
+        direction: "top"
+    });
+}
+    
+    }).addTo(map);
+}
+ 
+function toggleCountrySelection(countryCode) {
+
+    const layer = countryLayers[countryCode];
+    if (!layer) return;
+
+    if (selectedCountries.includes(countryCode)) {
+
+        selectedCountries = selectedCountries.filter(c => c !== countryCode);
+        geoLayer.resetStyle(layer);
+
+    } else {
+
+        selectedCountries.push(countryCode);
+
+        layer.setStyle({
+            fillColor: "#16a34a",
+            fillOpacity: 0.9,
+            weight: 2,
+            color: "#ffffff"
+        });
+    }
+
+    updateMapButton();
+    fetchJobs();   //  applyFilters
+}
+function updateMapButton() {
+    const btn = document.getElementById('map-btn');
+    const txt = document.getElementById('map-status');
+
+    if (selectedCountries.length > 0) {
+        btn.classList.add('active');
+        txt.innerText = `Selected (${selectedCountries.length})`;
+    } else {
+        btn.classList.remove('active');
+        txt.innerText = 'Select Countries (0)';
+    }
+}
+
+
+
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('nexus_user'));
+            if(user && (user.role === 'company' || user.role === 'admin')) {
+                document.getElementById('btn-add-job').style.display = 'flex';
+            }
+        });
+
+        function openAddJobModal() {
+            document.getElementById('add-job-modal').classList.add('open');
+        }
+
+ async function submitNewJob(e) {
+    e.preventDefault();
+    const user = JSON.parse(localStorage.getItem('nexus_user'));
+    
+    if(!user) {
+        Swal.fire('Error', 'Please login first', 'error');
+        return;
+    }
+
+
+    const payload = {
+        title: document.getElementById('aj-title').value,
+        company: user.name, 
+        country: document.getElementById('aj-country').value,
+        country_code: document.getElementById('aj-code').value.toUpperCase(),
+        track: document.getElementById('aj-track').value,
+        type: 'Full-time',
+        seniority: document.getElementById('aj-seniority').value,
+        description: document.getElementById('aj-desc').value,
+        requirements: document.getElementById('aj-reqs').value,
+        apply_link: document.getElementById('aj-link').value, // NEW
+        salary: 'Competitive'
+    };
+
+    try {
+        const res = await fetch('/api/jobs/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+
+        if(res.ok && result.success) {
+            document.getElementById('add-job-modal').classList.remove('open');
+            document.getElementById('add-job-form').reset();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Job Posted!',
+                text: 'Your job listing is now live on the map.',
+                timer: 2000
+            });
+            
+            fetchJobs(); 
+        } else {
+            throw new Error(result.error || "Failed to post job");
+        }
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Oops!', err.message, 'error');
+    }
+}
+
+  
+document.addEventListener('DOMContentLoaded', () => {
+    const user = JSON.parse(localStorage.getItem('nexus_user'));
+    
+    if (user && user.role === 'admin') {
+        document.getElementById('admin-management-section').style.display = 'block';
+        loadPendingUsers();
+    }
+});
+
+async function loadPendingUsers() {
+    const res = await fetch('/api/admin/pending-users');
+    const users = await res.json();
+    const container = document.getElementById('pending-users-list');
+    
+    if (users.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted);">No pending requests.</p>';
+        return;
+    }
+
+    container.innerHTML = users.map(u => `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);">
+            <div>
+                <strong style="color: var(--accent);">${u.name}</strong> 
+                <span style="font-size: 0.8rem; color: var(--text-muted);">(${u.role})</span>
+                <div style="font-size: 0.85rem;">${u.email}</div>
+            </div>
+            <button onclick="approveUser(${u.id})" class="btn-auth" style="width: auto; padding: 5px 15px; margin: 0; font-size: 0.9rem;">
+                APPROVE
+            </button>
+        </div>
+    `).join('');
+}
+
+async function approveUser(userId) {
+    const result = await Swal.fire({
+        title: 'Approve User?',
+        text: "This user will gain access to the platform.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Approve'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch('/api/admin/approve-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+            
+            if (res.ok) {
+               
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'User Approved Successfully',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+                loadPendingUsers(); 
+            }
+        } catch (e) {
+            Swal.fire('Error', 'Could not complete action', 'error');
+        }
+       
+    document.getElementById('add-job-form').reset();
+    }
+}
+    
+    // --- DELETE JOB ---
+async function deleteJob(id, e) {
+    e.stopPropagation(); // Prevent card click
+    if(!confirm("Are you sure? This will delete the job and all applications.")) return;
+
+    try {
+        const res = await fetch(`/api/jobs/${id}`, { method: 'DELETE' });
+        if(res.ok) {
+            fetchJobs(); // Refresh list
+            Swal.fire('Deleted!', 'Job removed.', 'success');
+        } else {
+            alert("Failed to delete");
+        }
+    } catch(err) { console.error(err); }
+}
+
+
+let currentApplicantsData = []; // Global variable for Export
+
+async function viewApplicants(jobId, jobTitle, e) {
+    if(e) e.stopPropagation(); // Stop the card from opening
+
+    const modal = document.getElementById('applicants-modal');
+    const tbody = document.getElementById('applicants-table-body');
+    const noMsg = document.getElementById('no-applicants-msg');
+    
+    // Debug: Check if modal exists
+    if(!modal) {
+        console.error("Applicants modal HTML is missing!");
+        alert("Error: Modal HTML missing. Check Step 1.");
+        return;
+    }
+
+    // Reset UI
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Loading data...</td></tr>';
+    noMsg.style.display = 'none';
+    modal.classList.add('open');
+    currentApplicantsData = []; 
+
+    try {
+        const res = await fetch(`/api/jobs/${jobId}/applicants`);
+        
+        if (res.status === 403) {
+            alert("Access Denied: You are not the owner of this job.");
+            modal.classList.remove('open');
+            return;
+        }
+        if (res.status === 404) {
+            alert("Job not found.");
+            return;
+        }
+
+        const data = await res.json();
+        currentApplicantsData = data; 
+        tbody.innerHTML = ''; 
+
+        if (data.length === 0) {
+            noMsg.style.display = 'block';
+        } else {
+            data.forEach(app => {
+                const date = new Date(app.timestamp).toLocaleDateString();
+                const row = `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 12px;"><strong>${app.applicantName}</strong></td>
+                        <td style="padding: 12px;">${app.applicantEmail}</td>
+                        <td style="padding: 12px;">${app.applicantPhone || 'N/A'}</td>
+                        <td style="padding: 12px;">${date}</td>
+                        <td style="padding: 12px;">
+                            ${app.cvPath 
+                                ? `<a href="${app.cvPath}" target="_blank" style="color:var(--accent); text-decoration:none; border:1px solid var(--border); padding:5px 10px; border-radius:4px;"><i class="fas fa-download"></i> Download</a>` 
+                                : '<span style="color:var(--text-muted)">No File</span>'}
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Server Connection Error.</td></tr>';
+    }
+}
+
+function downloadExcel() {
+    if (currentApplicantsData.length === 0) {
+        alert("No data to export.");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Name,Email,Phone,Date Applied,CV Link\n";
+
+    currentApplicantsData.forEach(row => {
+        const cleanName = row.applicantName.replace(/,/g, '');
+        const cleanEmail = row.applicantEmail.replace(/,/g, '');
+        const cleanPhone = (row.applicantPhone || '').replace(/,/g, '');
+        const cvLink = row.cvPath ? window.location.origin + row.cvPath : "N/A";
+        csvContent += `${cleanName},${cleanEmail},${cleanPhone},${row.timestamp},${cvLink}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `applicants_job.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
+    </script>
+
+
+</body>
+</html>
