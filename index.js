@@ -17,14 +17,12 @@
    notes: اي كومنت بالعربي يبقي ده مهم جدا 
 */
 
-
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const cors = require('cors');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'nexus-super-secret-key-2024';
@@ -42,41 +40,24 @@ const port = process.env.PORT || 3000;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, 'public/uploads/jobs');
-if (!fs.existsSync(uploadDir)){
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Multer Storage Configuration (Dynamic Folder per Job)
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const jobId = req.body.jobId || 'misc'; 
-        const dir = path.join(__dirname, `public/uploads/jobs/${jobId}`);
-        if (!fs.existsSync(dir)){
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        cb(null, dir);
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
-});
-
-const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
+// Multer Storage Configuration (Now using Memory Storage for Supabase Uploads)
+// Ensure uploads directory exists comment kept for context, but Supabase handles storage now
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 const uploadTemp = multer({ storage: multer.memoryStorage() });
+
 // Middleware
 app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 
-// --- DATABASE INITIALIZATION (SQLite) ---
-const db = new sqlite3.Database('./nexus.db', (err) => {
-    if (err) console.error("DB Error:", err.message);
-    else console.log(" Connected to SQLite database.");
-    initDB();
-});
+// --- DATABASE INITIALIZATION (Supabase) ---
+const { createClient } = require('@supabase/supabase-js');
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+console.log("Connected to Supabase database.");
 
 const isAdmin = (req, res, next) => {
     const token = req.cookies.auth_token; // tokens from cookies
@@ -97,141 +78,6 @@ const isAdmin = (req, res, next) => {
     }
 };
 
-function initDB() {
-    db.serialize(() => {
-        db.run(`CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            email TEXT UNIQUE,
-            password TEXT,
-            role TEXT,
-            is_approved INTEGER DEFAULT 0 -- 0: pending, 1: approved
-        )`);
-
-
-        db.run("DELETE FROM users WHERE email = 'admin@nexus.com'");
-
-        db.get("SELECT count(*) as count FROM users WHERE role = 'admin'", async (err, row) => {
-            if (row && row.count === 0) {
-                const hashed = await bcrypt.hash('admin123', 10); 
-                db.run("INSERT INTO users (name, email, password, role, is_approved) VALUES (?, ?, ?, ?, ?)", 
-                ['Admin', 'admin@nexus.com', hashed, 'admin', 1]);
-                console.log("[DB] Default Admin created: admin@nexus.com / admin123");
-            }
-        });
-        // Update Applications Table
-        db.run(`CREATE TABLE IF NOT EXISTS applications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            jobId INTEGER,
-            applicantName TEXT,
-            applicantEmail TEXT,
-            applicantPhone TEXT,      -- NEW
-            cvPath TEXT,              -- NEW: Path to the file
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
-
-        db.run(`CREATE TABLE IF NOT EXISTS hot_topics (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            description TEXT,
-            field TEXT,
-            type TEXT,       
-            status TEXT,     
-            tags TEXT,
-            link TEXT,           -- new field for link
-            priority INTEGER DEFAULT 0  -- new field for order
-        )`);
-
-        
-        
-        // Update Jobs Table
-        db.run(`CREATE TABLE IF NOT EXISTS jobs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            owner_id INTEGER,         -- NEW: Who posted the job
-            title TEXT,
-            company TEXT,
-            country TEXT,
-            country_code TEXT,
-            track TEXT,
-            type TEXT,
-            seniority TEXT,
-            description TEXT,
-            requirements TEXT,
-            salary TEXT,
-            apply_link TEXT,          -- NEW: External link (optional)
-            posted_at DATE DEFAULT CURRENT_DATE
-        )`);
-
-         // New Table: Local Researchers from CSV
-        db.run(`CREATE TABLE IF NOT EXISTS local_researchers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT, affiliation TEXT, country TEXT, keywords TEXT, scholar_url TEXT
-        )`);
-
-        // NEW RESEARCHER TABLE STRUCTURE
-        db.run(`CREATE TABLE IF NOT EXISTS academic_researchers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            affiliation TEXT,
-            main_topic TEXT,
-            subtopics TEXT,
-            scholar_id TEXT
-        )`);
-
-        // 2. Create Companies Table with new columns
-        db.run(`CREATE TABLE IF NOT EXISTS companies (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            category TEXT,
-            industry TEXT,
-            size TEXT,             -- NEW: Employee Count
-            website TEXT,
-            linkedin TEXT,         -- NEW: LinkedIn URL
-            branches TEXT,         -- NEW: JSON String containing all locations/presence types
-            hq_country TEXT        -- The primary or first detected country
-        )`);
-
-
-        // Seed Data Update
-        db.get("SELECT count(*) as count FROM jobs", (err, row) => {
-
-            if (row.count === 0) {
-                const stmt = db.prepare("INSERT INTO jobs (title, company, country, country_code, track, type, seniority, description, requirements, salary) VALUES (?,?,?,?,?,?,?,?,?,?)");
-                
-                const seeds = [
-                    [
-                        'AI Research Scientist', 'DeepMind', 'United Kingdom', 'GB', 'Computer Science & AI', 'Full-time', 'Senior',
-                        'Leading research in AGI and reinforcement learning.',
-                        'Ph.D. in Computer Science|5+ years in PyTorch|Published at NeurIPS/ICML',
-                        '$120k - $180k'
-                    ],
-                    [
-                        'Embedded Systems Engineer', 'Siemens', 'Germany', 'DE', 'Electronics & Hardware', 'Full-time', 'Mid-Level',
-                        'Developing firmware for automotive microcontrollers.',
-                        'C/C++ Proficiency|Experience with RTOS|PCB Design basics',
-                        '€70k - €90k'
-                    ],
-                    [
-                        'Frontend Developer', 'Instabug', 'Egypt', 'EG', 'Computer Science & AI', 'Remote', 'Junior',
-                        'Building responsive dashboards for bug reporting tools.',
-                        'React.js Mastery|TypeScript|HTML5 & CSS3',
-                        'Competitive'
-                    ],
-                    [
-                        'Bioinformatics Analyst', 'Pfizer', 'United States', 'US', 'Biotechnology', 'Contract', 'Entry',
-                        'Analyzing genomic data sequences for vaccine trials.',
-                        'Python & R|Genomics background|Data Visualization',
-                        '$50/hr'
-                    ]
-                ];
-
-                seeds.forEach(s => stmt.run(s));
-                stmt.finalize();
-            }
-        });
-    });
-}
-
 // --- FRONTEND ROUTES (HTML PAGES) ---
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
@@ -245,8 +91,6 @@ app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'p
 app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/local-search', (req, res) => res.sendFile(path.join(__dirname, 'public', 'local-search.html')));
-
-
 
 
 // ================================================================
@@ -273,13 +117,13 @@ function parseCSVRow(str) {
     return result;
 }
 
-
 // Helper: Clean academic titles from names to fix S2 API calls
 function cleanName(name) {
     return name.replace(/^(Professor\.|Professor|Prof\.|Dr\.|PhD Candidate at|PhD Candidate|Associate Professor|Assistant Professor|Ph\.D\.|MSc)\s+/gi, '')
                .replace(/,.*/, '') // Remove anything after a comma 
                .trim();
 }
+
 // ================================================================
 //  SECTION 1: LOCAL RESEARCHER DB API
 // ================================================================
@@ -288,7 +132,7 @@ function cleanName(name) {
 app.post('/api/admin/upload-researchers',
     isAdmin,
     uploadTemp.single('file'),
-    (req, res) => {
+    async (req, res) => {
 
     if (!req.file || !req.file.buffer) {
         return res.status(400).json({error: "No file uploaded or invalid format"});
@@ -299,59 +143,62 @@ app.post('/api/admin/upload-researchers',
     try {
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
 
-        db.serialize(() => {
-            if (clearDb) db.run("DELETE FROM academic_researchers"); 
+        if (clearDb) {
+            await supabase.from('academic_researchers').delete().neq('id', 0);
+        }
 
-            const stmt = db.prepare("INSERT INTO academic_researchers (name, affiliation, main_topic, subtopics, scholar_id) VALUES (?, ?, ?, ?, ?)");
-            let totalInserted = 0;
+        let researchersToInsert = [];
+        const sheetsEntries = Object.entries(workbook.Sheets);
+        
+        sheetsEntries.forEach(entry => {
+            const sheetName = entry.at(0);
+            const sheet = entry.at(1);
+            const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
 
-            const sheetsEntries = Object.entries(workbook.Sheets);
-            
-            sheetsEntries.forEach(entry => {
-                const sheetName = entry.at(0);
-                const sheet = entry.at(1);
-                const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+            for (let i = 1; i < rows.length; i++) {
+                const cols = rows.at(i);
+                if (!cols || cols.length === 0) continue;
 
-                for (let i = 1; i < rows.length; i++) {
-                    const cols = rows.at(i);
-                    if (!cols || cols.length === 0) continue;
+                const name = cols.at(0) || '';       
+                const affil = cols.at(1) || '';      
+                const subtopics = cols.at(2) || '';  
+                const link = cols.at(3) || '';       
 
-                    const name = cols.at(0) || '';       
-                    const affil = cols.at(1) || '';      
-                    const subtopics = cols.at(2) || '';  
-                    const link = cols.at(3) || '';       
+                if (typeof name !== 'string' || name.trim() === '' || name.toLowerCase().includes('name')) {
+                    continue;
+                }
 
-                    if (typeof name !== 'string' || name.trim() === '' || name.toLowerCase().includes('name')) {
-                        continue;
-                    }
-
-                    // === extract ID ===
-                    let scholar_id = '';
-                    if (typeof link === 'string') {
-                        // 1. if Semantic Scholar (just numbers)
-                        if (link.includes('semanticscholar.org')) {
-                            const match = link.match(/author\/(\d+)/);
-                            if (match) scholar_id = match.at(1);
-                        } 
-                        // 2. if Google Scholar (letters and numbers)
-                        else if (link.includes('user=')) {
-                            const parts = link.split('user=');
-                            if (parts.length > 1) {
-                                scholar_id = parts.at(1).split('&').at(0);
-                            }
+                // === extract ID ===
+                let scholar_id = '';
+                if (typeof link === 'string') {
+                    // 1. if Semantic Scholar (just numbers)
+                    if (link.includes('semanticscholar.org')) {
+                        const match = link.match(/author\/(\d+)/);
+                        if (match) scholar_id = match.at(1);
+                    } 
+                    // 2. if Google Scholar (letters and numbers)
+                    else if (link.includes('user=')) {
+                        const parts = link.split('user=');
+                        if (parts.length > 1) {
+                            scholar_id = parts.at(1).split('&').at(0);
                         }
                     }
-
-                    const topicToSave = (sheetName && sheetName !== 'Sheet1') ? sheetName.trim() : (req.body.main_topic || 'Uncategorized');
-                    
-                    stmt.run(name, affil, topicToSave, subtopics, scholar_id);
-                    totalInserted++;
                 }
-            });
-            
-            stmt.finalize();
-            res.json({success: true, message: `Database synced! Added ${totalInserted} researchers.`});
+
+                const topicToSave = (sheetName && sheetName !== 'Sheet1') ? sheetName.trim() : (req.body.main_topic || 'Uncategorized');
+                
+                researchersToInsert.push({
+                    name, affiliation: affil, main_topic: topicToSave, subtopics, scholar_id
+                });
+            }
         });
+        
+        // Batch Insert to Supabase
+        if (researchersToInsert.length > 0) {
+            await supabase.from('academic_researchers').insert(researchersToInsert);
+        }
+        
+        res.json({success: true, message: `Database synced! Added ${researchersToInsert.length} researchers.`});
 
     } catch (err) {
         console.error("Excel Parsing Error:", err);
@@ -360,24 +207,25 @@ app.post('/api/admin/upload-researchers',
 });
 
 // 2. Fetch distinct Main Topics for the dropdown
-app.get('/api/local-researchers/main-topics', (req, res) => {
-    db.all(`SELECT DISTINCT main_topic FROM academic_researchers WHERE main_topic IS NOT NULL AND main_topic != ''`,[], (err, rows) => {
-        if (err) return res.status(500).json({error: err.message});
-        res.json(rows.map(r => r.main_topic));
-    });
+app.get('/api/local-researchers/main-topics', async (req, res) => {
+    const { data, error } = await supabase.from('academic_researchers').select('main_topic');
+    if (error) return res.status(500).json({error: error.message});
+    
+    // Get unique non-null topics
+    const topics = [...new Set(data.map(r => r.main_topic).filter(t => t && t.trim() !== ''))];
+    res.json(topics);
 });
 
 // 3. New Specific Filter Endpoint
-app.get('/api/local-researchers/filter', (req, res) => {
+app.get('/api/local-researchers/filter', async (req, res) => {
     const { main_topic, subtopic, university, researcher } = req.query;
     
-    let sql = `SELECT * FROM academic_researchers WHERE 1=1`;
-    const params = [];
+    let query = supabase.from('academic_researchers').select('*');
     
-    if (main_topic) { sql += ` AND main_topic = ?`; params.push(main_topic); }
-    if (subtopic) { sql += ` AND subtopics LIKE ?`; params.push(`%${subtopic}%`); }
-    if (university) { sql += ` AND affiliation LIKE ?`; params.push(`%${university}%`); }
-    if (researcher) { sql += ` AND name LIKE ?`; params.push(`%${researcher}%`); }
+    if (main_topic) query = query.eq('main_topic', main_topic);
+    if (subtopic) query = query.ilike('subtopics', `%${subtopic}%`);
+    if (university) query = query.ilike('affiliation', `%${university}%`);
+    if (researcher) query = query.ilike('name', `%${researcher}%`);
     
     // بص لو حد هيعدل بعدي في كام نوت مهمه لحاجات مسحتهم و حاجات كان لازم تتضاف 
     // الحته دي كنت حاططها علشان مبعتش كل حاجه من الداتا بيز للفرونت مباشر 
@@ -388,185 +236,199 @@ app.get('/api/local-researchers/filter', (req, res) => {
     // If you really want a safety cap, make it huge like 10000
     // sql += ` LIMIT 10000`; 
 
-    db.all(sql, params, (err, rows) => {
-        if (err) return res.status(500).json({error: err.message});
-        res.json(rows);
-    });
+    const { data: rows, error } = await query;
+    if (error) return res.status(500).json({error: error.message});
+    res.json(rows);
 });
 
 // 4. Detailed Analyze (Smart ID or Name Search)
 app.post('/api/local-researchers/analyze', async (req, res) => {
     const id = req.body.id;
     
-    db.get("SELECT * FROM academic_researchers WHERE id = ?", Array.of(id), async (err, localData) => {
-        if (err || !localData) {
-            return res.status(404).json({error: "Researcher not found in local DB"});
+    const { data: localData, error } = await supabase.from('academic_researchers').select('*').eq('id', id).single();
+    
+    if (error || !localData) {
+        return res.status(404).json({error: "Researcher not found in local DB"});
+    }
+    
+    try {
+        let s2AuthorData = null;
+        let authorIdToFetch = null;
+        const storedId = localData.scholar_id || '';
+
+        if (/^\d+$/.test(storedId)) {
+            console.log(`[Method] Using Direct Semantic Scholar ID: ${storedId}`);
+            authorIdToFetch = storedId;
+        } 
+        else {
+            console.log(`[Method] Google ID detected (${storedId}), falling back to Smart Name Search.`);
+            
+            let cleanQueryName = localData.name.split(',').at(0); 
+            
+            const titles = ["Professor", "Prof.", "Dr.", "Eng.", "PhD Candidate", "Associate Professor", "Assistant Professor", "MSc", "Ph.D."];
+            titles.forEach(t => {
+                cleanQueryName = cleanQueryName.replace(new RegExp(`\\b${t}\\b`, 'gi'), '');
+            });
+            
+            cleanQueryName = cleanQueryName.replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
+
+            const searchRes = await axios.get(`https://api.semanticscholar.org/graph/v1/author/search`, {
+                params: { query: cleanQueryName, limit: 1, fields: 'authorId' },
+                headers: { 'x-api-key': process.env.S2_API_KEY || '' }
+            }).catch(e => null);
+
+            if (searchRes && searchRes.data && searchRes.data.data && searchRes.data.data.length > 0) {
+                authorIdToFetch = searchRes.data.data.at(0).authorId;
+            }
         }
-        
-        try {
-            let s2AuthorData = null;
-            let authorIdToFetch = null;
-            const storedId = localData.scholar_id || '';
 
+        if (authorIdToFetch) {
+            const resData = await axios.get(`https://api.semanticscholar.org/graph/v1/author/${authorIdToFetch}`, {
+                params: { fields: 'name,citationCount,hIndex,paperCount,url,papers.title,papers.year,papers.venue,papers.citationCount,papers.fieldsOfStudy,papers.authors,papers.url' },
+                headers: { 'x-api-key': process.env.S2_API_KEY || '' }
+            }).catch(e => null);
             
-            
-            
-            if (/^\d+$/.test(storedId)) {
-                console.log(`[Method] Using Direct Semantic Scholar ID: ${storedId}`);
-                authorIdToFetch = storedId;
-            } 
-            
-            else {
-                console.log(`[Method] Google ID detected (${storedId}), falling back to Smart Name Search.`);
-                
-                
-                let cleanQueryName = localData.name.split(',').at(0); 
-                
-                
-                const titles = ["Professor", "Prof.", "Dr.", "Eng.", "PhD Candidate", "Associate Professor", "Assistant Professor", "MSc", "Ph.D."];
-                titles.forEach(t => {
-                    cleanQueryName = cleanQueryName.replace(new RegExp(`\\b${t}\\b`, 'gi'), '');
-                });
-                
-                cleanQueryName = cleanQueryName.replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
-
-                
-                const searchRes = await axios.get(`https://api.semanticscholar.org/graph/v1/author/search`, {
-                    params: { query: cleanQueryName, limit: 1, fields: 'authorId' },
-                    headers: { 'x-api-key': process.env.S2_API_KEY || '' }
-                }).catch(e => null);
-
-                if (searchRes && searchRes.data && searchRes.data.data && searchRes.data.data.length > 0) {
-                    authorIdToFetch = searchRes.data.data.at(0).authorId;
-                }
+            if (resData && resData.data) {
+                s2AuthorData = resData.data;
+                s2AuthorData.primaryField = extractTopField(s2AuthorData.papers);
             }
+        }
 
-            
-            if (authorIdToFetch) {
-                const resData = await axios.get(`https://api.semanticscholar.org/graph/v1/author/${authorIdToFetch}`, {
-                    params: { fields: 'name,citationCount,hIndex,paperCount,url,papers.title,papers.year,papers.venue,papers.citationCount,papers.fieldsOfStudy,papers.authors,papers.url' },
-                    headers: { 'x-api-key': process.env.S2_API_KEY || '' }
-                }).catch(e => null);
-                
-                if (resData && resData.data) {
-                    s2AuthorData = resData.data;
-                    s2AuthorData.primaryField = extractTopField(s2AuthorData.papers);
-                }
-            }
-
-            // (Collaborators)
-            let collaborators = [];
-            if (s2AuthorData && s2AuthorData.papers) {
-                const collabMap = new Map();
-                s2AuthorData.papers.forEach(p => {
-                    if(p.authors) {
-                        p.authors.forEach(a => {
-                            // Don't count the researcher themselves
-                            if (a.authorId !== s2AuthorData.authorId && a.name) {
-                                // Use ID as key to be accurate
-                                if (!collabMap.has(a.authorId)) {
-                                    collabMap.set(a.authorId, { name: a.name, id: a.authorId, count: 0 });
-                                }
-                                collabMap.get(a.authorId).count++;
+        // (Collaborators)
+        let collaborators = [];
+        if (s2AuthorData && s2AuthorData.papers) {
+            const collabMap = new Map();
+            s2AuthorData.papers.forEach(p => {
+                if(p.authors) {
+                    p.authors.forEach(a => {
+                        // Don't count the researcher themselves
+                        if (a.authorId !== s2AuthorData.authorId && a.name) {
+                            // Use ID as key to be accurate
+                            if (!collabMap.has(a.authorId)) {
+                                collabMap.set(a.authorId, { name: a.name, id: a.authorId, count: 0 });
                             }
-                        });
-                    }
-                });
-                
-                collaborators = Array.from(collabMap.values())
-                    .sort((a, b) => b.count - a.count)
-                    .slice(0, 10); // Return top 10
-            }
-
-            res.json({ local: localData, author: s2AuthorData, collaborators: collaborators });
+                            collabMap.get(a.authorId).count++;
+                        }
+                    });
+                }
+            });
             
-        } catch (e) {
-            console.error("Analyze Error:", e.message);
-            res.json({ local: localData, author: null, collaborators: [] });
+            collaborators = Array.from(collabMap.values())
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10); // Return top 10
         }
-    });
+
+        res.json({ local: localData, author: s2AuthorData, collaborators: collaborators });
+        
+    } catch (e) {
+        console.error("Analyze Error:", e.message);
+        res.json({ local: localData, author: null, collaborators: [] });
+    }
 });
 
 
-
-
-
-
 // Get Filters & Map Status
-app.get('/api/job-filters', (req, res) => {
-    db.all("SELECT DISTINCT country, country_code FROM jobs", [], (err, countries) => {
-        db.all("SELECT DISTINCT company FROM jobs", [], (err, companies) => {
-            db.all("SELECT DISTINCT track FROM jobs", [], (err, tracks) => {
-                // Map needs to know which countries have ANY jobs to color them blue initially
-                const activeCodes = countries.map(c => c.country_code);
-                res.json({ 
-                    countries, 
-                    companies: companies.map(c => c.company), 
-                    tracks: tracks.map(t => t.track),
-                    activeCodes 
-                });
-            });
-        });
+app.get('/api/job-filters', async (req, res) => {
+    const { data: rows, error } = await supabase.from('jobs').select('country, country_code, company, track');
+    if (error) return res.status(500).json({ error: error.message });
+
+    const countriesSet = new Map();
+    const companies = new Set();
+    const tracks = new Set();
+    const activeCodes = new Set();
+
+    rows.forEach(r => {
+        if (r.country && r.country_code) {
+            countriesSet.set(r.country_code, { country: r.country, country_code: r.country_code });
+            activeCodes.add(r.country_code);
+        }
+        if (r.company) companies.add(r.company);
+        if (r.track) tracks.add(r.track);
+    });
+
+    res.json({ 
+        countries: Array.from(countriesSet.values()), 
+        companies: Array.from(companies), 
+        tracks: Array.from(tracks),
+        activeCodes: Array.from(activeCodes) 
     });
 });
 
 // Get Jobs with Multi-Selection Logic
-app.post('/api/jobs/query', (req, res) => {
+app.post('/api/jobs/query', async (req, res) => {
     // We use POST to easily send arrays (for multi-select)
     const { countries, track, company, q } = req.body; // countries is an Array ['US', 'EG']
 
-    let sql = "SELECT * FROM jobs WHERE 1=1";
-    let params = [];
+    let query = supabase.from('jobs').select('*');
 
     // Multi-Country Filter
     if (countries && countries.length > 0 && !countries.includes('All')) {
-        const placeholders = countries.map(() => '?').join(',');
-        sql += ` AND country_code IN (${placeholders})`;
-        params.push(...countries);
+        query = query.in('country_code', countries);
     }
 
     if (track && track !== 'All') {
-        sql += " AND track = ?";
-        params.push(track);
+        query = query.eq('track', track);
     }
     if (company && company !== 'All') {
-        sql += " AND company = ?";
-        params.push(company);
+        query = query.eq('company', company);
     }
     if (q) {
-        sql += " AND (title LIKE ? OR description LIKE ?)";
-        params.push(`%${q}%`, `%${q}%`);
+        query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%`);
     }
 
-    db.all(sql, params, (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        // Enhance rows with Logo URL
-        const enhanced = rows.map(r => ({
-            ...r,
-            logo: `https://logo.clearbit.com/${r.company_domain}`
-        }));
-        res.json(enhanced);
-    });
+    const { data: rows, error } = await query;
+    
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Enhance rows with Logo URL
+    const enhanced = rows.map(r => ({
+        ...r,
+        logo: `https://logo.clearbit.com/${r.company_domain}`
+    }));
+    res.json(enhanced);
 });
 
 /**
  * API: Submit Application
  * Receives JSON data and stores it in memory.
  */
-app.post('/api/apply', upload.single('cv'), (req, res) => {
+app.post('/api/apply', upload.single('cv'), async (req, res) => {
     const { jobId, applicantName, applicantEmail, applicantPhone } = req.body;
     
-    // Construct the public URL path for the file
-    const cvPath = req.file ? `/uploads/jobs/${jobId}/${req.file.filename}` : null;
+    let cvPath = null;
+    
+    // Construct the public URL path for the file via Supabase Storage
+    if (req.file) {
+        const fileExt = req.file.originalname.split('.').pop();
+        const fileName = `${jobId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-    const sql = "INSERT INTO applications (jobId, applicantName, applicantEmail, applicantPhone, cvPath) VALUES (?, ?, ?, ?, ?)";
-    db.run(sql, [jobId, applicantName, applicantEmail, applicantPhone, cvPath], function(err) {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ error: "Application failed" });
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('cv-uploads') // Ensure this bucket exists in Supabase
+            .upload(fileName, req.file.buffer, {
+                contentType: req.file.mimetype
+            });
+
+        if (uploadError) {
+            console.error(uploadError);
+            return res.status(500).json({ error: "File upload failed" });
         }
-        res.json({ success: true, message: "Application submitted successfully." });
-    });
+        
+        const { data: publicUrlData } = supabase.storage
+            .from('cv-uploads')
+            .getPublicUrl(fileName);
+            
+        cvPath = publicUrlData.publicUrl;
+    }
+
+    const { error } = await supabase
+        .from('applications')
+        .insert([{ jobId, applicantName, applicantEmail, applicantPhone, cvPath }]);
+
+    if (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Application failed" });
+    }
+    res.json({ success: true, message: "Application submitted successfully." });
 });
 
 
@@ -783,33 +645,34 @@ app.post('/api/explore', async (req, res) => {
 //  SECTION 4: HOT TOPICS API
 // ================================================================
 
+app.get('/api/hottopics', async (req, res) => {
+    const { data, error } = await supabase
+        .from('hot_topics')
+        .select('*')
+        .order('priority', { ascending: false });
 
-app.get('/api/hottopics', (req, res) => {
-    const sql = "SELECT * FROM hot_topics ORDER BY priority DESC";
-    db.all(sql, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows); 
-    });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
-
-app.post('/api/hottopics/add', isAdmin, (req, res) => {
+app.post('/api/hottopics/add', isAdmin, async (req, res) => {
     const { title, description, field, type, status, priority, link } = req.body;
-    const sql = `INSERT INTO hot_topics (title, description, field, type, status, priority, link) VALUES (?,?,?,?,?,?,?)`;
-    db.run(sql, [title, description, field, type, status, priority || 0, link], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, id: this.lastID });
-    });
+    
+    const { data, error } = await supabase
+        .from('hot_topics')
+        .insert([{ title, description, field, type, status, priority: priority || 0, link }])
+        .select()
+        .single();
+        
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, id: data.id });
 });
 
-
-app.delete('/api/hottopics/:id', isAdmin, (req, res) => {
-    db.run("DELETE FROM hot_topics WHERE id = ?", [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-    });
+app.delete('/api/hottopics/:id', isAdmin, async (req, res) => {
+    const { error } = await supabase.from('hot_topics').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
 });
-
 
 
 // Middleware to extract user from token (Reuse your isAdmin logic or make a generic one)
@@ -825,23 +688,24 @@ const isAuthenticated = (req, res, next) => {
     }
 };
 
-app.post('/api/jobs/add', isAuthenticated, (req, res) => {
+app.post('/api/jobs/add', isAuthenticated, async (req, res) => {
     const { title, company, country, country_code, track, type, seniority, description, requirements, salary, apply_link } = req.body;
     const owner_id = req.user.id; // From Token
 
-    const sql = "INSERT INTO jobs (owner_id, title, company, country, country_code, track, type, seniority, description, requirements, salary, apply_link) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
-    
-    db.run(sql, [owner_id, title, company, country, country_code, track, type, seniority, description, requirements, salary, apply_link], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, jobId: this.lastID });
-    });
+    const { data, error } = await supabase
+        .from('jobs')
+        .insert([{ owner_id, title, company, country, country_code, track, type, seniority, description, requirements, salary, apply_link }])
+        .select()
+        .single();
+        
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, jobId: data.id });
 });
 
 // ================================================================
 //  SECTION 5: AUTHENTICATION & USERS
 // ================================================================
 
-// Register
 // Register
 app.post('/api/auth/register', async (req, res) => {
     const { name, email, password, role } = req.body;
@@ -853,25 +717,24 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        db.run("INSERT INTO users (name, email, password, role, is_approved) VALUES (?, ?, ?, ?, ?)",
-            [name, email, hashedPassword, role, isApproved],
-            function(err) {
-                if (err) {
-                    console.error("DB Register Error:", err.message); 
-                    if (err.message.includes('UNIQUE')) {
-                        return res.status(400).json({ error: "Email already exists" });
-                    }
-                    return res.status(500).json({ error: "Database error during registration" });
-                }
+        const { error } = await supabase
+            .from('users')
+            .insert([{ name, email, password: hashedPassword, role, is_approved: isApproved }]);
 
-
-                if (isApproved === 0) {
-                    res.json({ success: true, message: "Account created. Waiting for Admin approval." });
-                } else {
-                    res.json({ success: true, message: "Registration successful. You can login now." });
-                }
+        if (error) {
+            console.error("DB Register Error:", error.message); 
+            // Postgres unique violation code is 23505
+            if (error.code === '23505') {
+                return res.status(400).json({ error: "Email already exists" });
             }
-        );
+            return res.status(500).json({ error: "Database error during registration" });
+        }
+
+        if (isApproved === 0) {
+            res.json({ success: true, message: "Account created. Waiting for Admin approval." });
+        } else {
+            res.json({ success: true, message: "Registration successful. You can login now." });
+        }
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: "Server error" });
@@ -880,31 +743,36 @@ app.post('/api/auth/register', async (req, res) => {
 
 
 // Login
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
-    db.get("SELECT * FROM users WHERE email = ?", [email], async (err, user) => {
-        if (err || !user) return res.status(400).json({ error: "Invalid credentials" });
-        
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) return res.status(400).json({ error: "Invalid credentials" });
+    
+    const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
 
-        if (user.is_approved === 0) {
-            return res.status(403).json({ error: "Your account is pending Admin approval." });
-        }
+    if (error || !user) return res.status(400).json({ error: "Invalid credentials" });
+    
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) return res.status(400).json({ error: "Invalid credentials" });
 
-        const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '24h' });
+    if (user.is_approved === 0) {
+        return res.status(403).json({ error: "Your account is pending Admin approval." });
+    }
 
-        // tokens in cookies
-        res.cookie('auth_token', token, {
-            httpOnly: true, //   لحد ما نظبط حوار ال testing  XSS
-            secure: false,  // خليها true في حالة الـ HTTPS (Production)
-            maxAge: 24 * 60 * 60 * 1000 // one day
-        });
+    const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '24h' });
 
-        res.json({ 
-            success: true, 
-            user: { id: user.id, name: user.name, role: user.role } 
-        });
+    // tokens in cookies
+    res.cookie('auth_token', token, {
+        httpOnly: true, //   لحد ما نظبط حوار ال testing  XSS
+        secure: false,  // خليها true في حالة الـ HTTPS (Production)
+        maxAge: 24 * 60 * 60 * 1000 // one day
+    });
+
+    res.json({ 
+        success: true, 
+        user: { id: user.id, name: user.name, role: user.role } 
     });
 });
 
@@ -916,19 +784,23 @@ app.get('/api/auth/logout', (req, res) => {
 
 
 // Add New Job (Company/Admin Only)
-app.post('/api/jobs/add', (req, res) => {
+// (Note: There was a duplicate definition of this route in SQLite version, mapped to the same behavior)
+app.post('/api/jobs/add', async (req, res) => {
     const { title, company, country, country_code, track, type, seniority, description, requirements, salary } = req.body;
     
-    const sql = "INSERT INTO jobs (title, company, country, country_code, track, type, seniority, description, requirements, salary) VALUES (?,?,?,?,?,?,?,?,?,?)";
-    db.run(sql, [title, company, country, country_code, track, type, seniority, description, requirements, salary], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, jobId: this.lastID }); //success: true
-    });
+    const { data, error } = await supabase
+        .from('jobs')
+        .insert([{ title, company, country, country_code, track, type, seniority, description, requirements, salary }])
+        .select()
+        .single();
+        
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, jobId: data.id }); 
 });
 
 
 // GET Applicants for a specific job (Secured)
-app.get('/api/jobs/:id/applicants', isAdmin, (req, res) => { 
+app.get('/api/jobs/:id/applicants', isAdmin, async (req, res) => { 
     // Note: isAdmin here checks if user is logged in. 
     // Ideally, create a specific middleware 'isJobOwner' as discussed before.
     // For now, assuming 'isAdmin' simply verifies a valid JWT token exists.
@@ -938,71 +810,88 @@ app.get('/api/jobs/:id/applicants', isAdmin, (req, res) => {
     const userRole = req.user.role;
 
     // 1. Verify this user owns the job
-    db.get("SELECT owner_id, title FROM jobs WHERE id = ?", [jobId], (err, job) => {
-        if (err || !job) return res.status(404).json({ error: "Job not found" });
+    const { data: job, error: jobError } = await supabase
+        .from('jobs')
+        .select('owner_id, title')
+        .eq('id', jobId)
+        .single();
 
-        // Allow if user is the Owner OR an Admin
-        if (job.owner_id !== userId && userRole !== 'admin') {
-            return res.status(403).json({ error: "Access Denied. You do not own this job post." });
-        }
+    if (jobError || !job) return res.status(404).json({ error: "Job not found" });
 
-        // 2. Fetch Applicants
-        const sql = `SELECT id, applicantName, applicantEmail, applicantPhone, cvPath, timestamp FROM applications WHERE jobId = ? ORDER BY timestamp DESC`;
+    // Allow if user is the Owner OR an Admin
+    if (job.owner_id !== userId && userRole !== 'admin') {
+        return res.status(403).json({ error: "Access Denied. You do not own this job post." });
+    }
+
+    // 2. Fetch Applicants
+    const { data: rows, error } = await supabase
+        .from('applications')
+        .select('id, applicantName, applicantEmail, applicantPhone, cvPath, timestamp')
+        .eq('jobId', jobId)
+        .order('timestamp', { ascending: false });
         
-        db.all(sql, [jobId], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(rows);
-        });
-    });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(rows);
 });
 
 
-app.delete('/api/jobs/:id', isAuthenticated, (req, res) => {
+app.delete('/api/jobs/:id', isAuthenticated, async (req, res) => {
     const jobId = req.params.id;
     const userId = req.user.id;
     const userRole = req.user.role;
 
     // First check if user owns the job or is admin
-    db.get("SELECT owner_id FROM jobs WHERE id = ?", [jobId], (err, row) => {
-        if (err || !row) return res.status(404).json({ error: "Job not found" });
+    const { data: row, error: jobError } = await supabase
+        .from('jobs')
+        .select('owner_id')
+        .eq('id', jobId)
+        .single();
 
-        if (row.owner_id !== userId && userRole !== 'admin') {
-            return res.status(403).json({ error: "Unauthorized" });
-        }
+    if (jobError || !row) return res.status(404).json({ error: "Job not found" });
 
-        // 1. Delete Job Entry
-        db.run("DELETE FROM jobs WHERE id = ?", [jobId], (err) => {
-            if (err) return res.status(500).json({ error: err.message });
+    if (row.owner_id !== userId && userRole !== 'admin') {
+        return res.status(403).json({ error: "Unauthorized" });
+    }
 
-            // 2. Delete Applications Entry
-            db.run("DELETE FROM applications WHERE jobId = ?", [jobId]);
+    // 1. Delete Job Entry
+    const { error: delJobError } = await supabase.from('jobs').delete().eq('id', jobId);
+    if (delJobError) return res.status(500).json({ error: delJobError.message });
 
-            // 3. Delete CV Folder (Optional, but keeps server clean)
-            const jobFolder = path.join(__dirname, `public/uploads/jobs/${jobId}`);
-            if (fs.existsSync(jobFolder)) {
-                fs.rm(jobFolder, { recursive: true, force: true }, () => {});
-            }
+    // 2. Delete Applications Entry
+    await supabase.from('applications').delete().eq('jobId', jobId);
 
-            res.json({ success: true });
-        });
-    });
+    // 3. Delete CV Folder (Optional, but keeps server clean)
+    // Note: Since we are using Supabase storage, folder deletion logic is commented out here to preserve exact structural comments.
+    // const jobFolder = path.join(__dirname, `public/uploads/jobs/${jobId}`);
+    // if (fs.existsSync(jobFolder)) {
+    //     fs.rm(jobFolder, { recursive: true, force: true }, () => {});
+    // }
+
+    res.json({ success: true });
 });
 
 
-app.get('/api/admin/pending-users', (req, res) => {
-    db.all("SELECT id, name, email, role FROM users WHERE is_approved = 0", [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+app.get('/api/admin/pending-users', async (req, res) => {
+    const { data: rows, error } = await supabase
+        .from('users')
+        .select('id, name, email, role')
+        .eq('is_approved', 0);
+        
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(rows);
 });
 
 
-app.post('/api/admin/approve-user', (req, res) => {
+app.post('/api/admin/approve-user', async (req, res) => {
     const { userId } = req.body;
-    db.run("UPDATE users SET is_approved = 1 WHERE id = ?", [userId], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-    });
+    
+    const { error } = await supabase
+        .from('users')
+        .update({ is_approved: 1 })
+        .eq('id', userId);
+        
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
 });
 
 
@@ -1011,7 +900,7 @@ app.post('/api/admin/approve-user', (req, res) => {
 // ================================================================
 
 // API: Upload Companies
-app.post('/api/admin/upload-companies', isAdmin, uploadTemp.single('file'), (req, res) => {
+app.post('/api/admin/upload-companies', isAdmin, uploadTemp.single('file'), async (req, res) => {
     if (!req.file || !req.file.buffer) return res.status(400).json({error: "No file uploaded"});
     
     const clearDb = req.body.clear_db === 'true';
@@ -1142,26 +1031,27 @@ app.post('/api/admin/upload-companies', isAdmin, uploadTemp.single('file'), (req
             });
         });
 
-        // Database Save
-        db.serialize(() => {
-            if (clearDb) db.run("DELETE FROM companies");
-            
-            db.run(`CREATE TABLE IF NOT EXISTS companies (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT, category TEXT, industry TEXT, size TEXT, 
-                website TEXT, linkedin TEXT, branches TEXT, hq_country TEXT
-            )`);
+        // Database Save Process (Supabase)
+        if (clearDb) {
+            await supabase.from('companies').delete().neq('id', 0);
+        }
 
-            const stmt = db.prepare(`INSERT INTO companies (name, category, industry, size, website, linkedin, branches, hq_country) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
-            let count = 0;
-            
-            Object.values(companiesMap).forEach(c => {
-                stmt.run(c.name, c.category, c.industry, c.size, c.website, c.linkedin, JSON.stringify(c.branches), c.hq_country);
-                count++;
-            });
-            stmt.finalize();
-            res.json({ success: true, message: `Processed ${count} companies.` });
-        });
+        const companiesToInsert = Object.values(companiesMap).map(c => ({
+            name: c.name, 
+            category: c.category, 
+            industry: c.industry, 
+            size: c.size, 
+            website: c.website, 
+            linkedin: c.linkedin, 
+            branches: JSON.stringify(c.branches), 
+            hq_country: c.hq_country
+        }));
+
+        if (companiesToInsert.length > 0) {
+            await supabase.from('companies').insert(companiesToInsert);
+        }
+
+        res.json({ success: true, message: `Processed ${companiesToInsert.length} companies.` });
 
     } catch (err) {
         console.error(err);
@@ -1170,68 +1060,68 @@ app.post('/api/admin/upload-companies', isAdmin, uploadTemp.single('file'), (req
 });
 
 // 2. Search Companies (Matches ANY branch)
-app.get('/api/companies', (req, res) => {
+app.get('/api/companies', async (req, res) => {
     const { q, country, category } = req.query; 
 
-    let sql = "SELECT * FROM companies WHERE 1=1";
-    let params = [];
-
-    if (q) {
-        sql += " AND (name LIKE ? OR industry LIKE ?)";
-        params.push(`%${q}%`, `%${q}%`);
-    }
+    let query = supabase.from('companies').select('*');
 
     if (category && category !== 'All') {
-        sql += " AND category = ?";
-        params.push(category);
+        query = query.eq('category', category);
     }
+    
+    if (q) {
+        query = query.or(`name.ilike.%${q}%,industry.ilike.%${q}%`);
+    }
+
+    const { data: rows, error } = await query;
+    if (error) return res.status(500).json({ error: error.message });
+
+    let finalRows = rows;
 
     if (country && country !== 'All') {
         const list = country.split(',');
         // This Logic checks if the country string exists ANYWHERE in the JSON branches
         // Effectively treating a branch in Egypt as equal to a company HQ'd in Egypt
-        const likeClauses = list.map(() => "branches LIKE ?").join(' OR ');
-        sql += ` AND (${likeClauses})`;
-        list.forEach(c => params.push(`%${c}%`)); 
+        finalRows = rows.filter(r => {
+            const bStr = r.branches || '';
+            return list.some(c => bStr.includes(c));
+        });
     }
 
-    db.all(sql, params, (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        const enhanced = rows.map(r => ({
-            ...r,
-            // Fallback logo generator
-            logo: `https://logo.clearbit.com/${r.name.replace(/[\s,.]+/g, '').toLowerCase()}.com`,
-            branches: JSON.parse(r.branches || '[]')
-        }));
-        res.json(enhanced);
-    });
+    const enhanced = finalRows.map(r => ({
+        ...r,
+        // Fallback logo generator
+        logo: `https://logo.clearbit.com/${r.name.replace(/[\s,.]+/g, '').toLowerCase()}.com`,
+        branches: JSON.parse(r.branches || '[]')
+    }));
+    
+    res.json(enhanced);
 });
 
 // 3. Get Filters (Extracts unique countries from JSON)
-app.get('/api/companies/filters', (req, res) => {
-    db.all("SELECT branches, category FROM companies", [], (err, rows) => {
-        const countries = new Set();
-        const categories = new Set();
-        
-        rows.forEach(r => {
-            if(r.category) categories.add(r.category);
-            try {
-                const b = JSON.parse(r.branches);
-                b.forEach(branch => {
-                    if(branch.country) countries.add(branch.country);
-                });
-            } catch(e) {}
-        });
+app.get('/api/companies/filters', async (req, res) => {
+    const { data: rows, error } = await supabase.from('companies').select('branches, category');
+    
+    if (error) return res.status(500).json({ error: error.message });
 
-        res.json({
-            countries: Array.from(countries).sort(),
-            categories: Array.from(categories).sort()
-        });
+    const countries = new Set();
+    const categories = new Set();
+    
+    rows.forEach(r => {
+        if(r.category) categories.add(r.category);
+        try {
+            const b = JSON.parse(r.branches);
+            b.forEach(branch => {
+                if(branch.country) countries.add(branch.country);
+            });
+        } catch(e) {}
+    });
+
+    res.json({
+        countries: Array.from(countries).sort(),
+        categories: Array.from(categories).sort()
     });
 });
-
-
-
 
 
 // ================================================================
@@ -1279,7 +1169,6 @@ function extractTopField(papers) {
 }
 
 
-
 function getFuzzyValue(row, keywords) {
     const keys = Object.keys(row);
     // Find a key that contains one of the keywords (case insensitive)
@@ -1288,8 +1177,6 @@ function getFuzzyValue(row, keywords) {
     );
     return match ? row[match] : '';
 }
-
-
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
