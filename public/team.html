@@ -39,6 +39,26 @@
             text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
         }
 
+        /* Slightly smaller trigger for team members */
+        .member-name-trigger {
+            font-family: var(--font-header);
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: 0.4s ease;
+            position: relative;
+            z-index: 2;
+            margin: 0;
+        }
+
+        .member-name-trigger:hover {
+            color: var(--accent);
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
         /* The Hidden Card */
         .prof-card {
             position: absolute;
@@ -81,10 +101,11 @@
 
         .prof-title {
             color: var(--text-muted);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             margin-bottom: 20px;
             text-transform: uppercase;
             letter-spacing: 1px;
+            line-height: 1.4;
         }
 
         .linkedin-btn {
@@ -99,11 +120,13 @@
             font-weight: 600;
             margin-top: 15px;
             transition: 0.2s;
+            text-decoration: none;
         }
 
         .linkedin-btn:hover {
             background: #005e93;
             transform: scale(1.02);
+            color: white;
         }
 
         .divider {
@@ -111,6 +134,15 @@
             background: var(--border);
             margin: 50px auto;
             max-width: 800px;
+        }
+
+        .team-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+            padding-bottom: 60px;
         }
     </style>
 </head>
@@ -129,11 +161,10 @@
                         <i class="fas fa-user-tie"></i>
                     </div>
                     <h3 style="margin-bottom: 5px;">Dr. Sherif Hosny</h3>
-                    <div class="prof-title">Project Supervisor & Mentor</div>
+                    <div class="prof-title">Senior Staff Verification and Integration Engineer at STMicroelectronics<br><br>Project Supervisor & Mentor</div>
                     <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
-                        Guiding the next generation of engineers through innovative research and academic excellence in Electronics and Computer Engineering.
-                    </p>
-                    <a href="https://www.linkedin.com/in/sherif-hosny-phd-sm-ieee-b552632b/" target="_blank" class="linkedin-btn">
+He provided the initial vision and continuously guided the strategic, technical, and research directions throughout its development. His mentorship and structured feedback played a central role in shaping the system architecture, refining the platform’s objectives, and ensuring academic and technical integrity.                    </p>
+                    <a href="https://www.linkedin.com/in/sherif-hosny-0731b32b/" target="_blank" class="linkedin-btn">
                         <i class="fab fa-linkedin"></i> Connect on LinkedIn
                     </a>
                 </div>
@@ -147,7 +178,28 @@
         <div style="text-align: center;">
             <h2 style="font-family: var(--font-header);">Computer Operators Team</h2>
             <p style="margin-top: 10px; color: var(--text-muted);">The dedicated team behind Scholar Nexus.</p>
-            <!-- Add other team members here if needed later -->
+            
+            <div class="team-grid">
+                <!-- Team Member 1 -->
+                <div class="prof-container">
+                    <h2 class="member-name-trigger">Mohamed Gad Mohamed Ahmed</h2>
+                    
+                    <div class="prof-card">
+                        <div class="prof-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h3 style="margin-bottom: 5px;">Mohamed Gad</h3>
+                        <div class="prof-title">B.Sc. in Electronics and Electrical Communications Engineering</div>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+                            Passionate electronics and communications engineer contributing to the operational success and development of Scholar Nexus.
+                        </p>
+                        <a href="https://www.linkedin.com/in/mohamed-gad-075179253" target="_blank" class="linkedin-btn">
+                            <i class="fab fa-linkedin"></i> Connect on LinkedIn
+                        </a>
+                    </div>
+                </div>
+                <!-- Add other team members here if needed later -->
+            </div>
         </div>
     </div>
 
