@@ -1123,6 +1123,89 @@ app.get('/api/companies/filters', async (req, res) => {
     });
 });
 
+// 1. Serve HTML Pages
+app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'public', 'team.html')));
+app.get('/grad-form', (req, res) => res.sendFile(path.join(__dirname, 'public', 'grad-form.html')));
+app.get('/grad-dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'grad-dashboard.html')));
+
+// 2. API: Submit Project
+app.post('/api/grad-projects/submit', async (req, res) => {
+    const {
+        studentName, email, phone, university, faculty, major,
+        supervisor, coSupervisor, isSponsored, sponsorCompany,
+        companyMentor, gradYear, domains, projectTitle, peersCount, docLink
+    } = req.body;
+
+    // Prepare data for Supabase
+    const { data, error } = await supabase
+        .from('graduation_projects')
+        .insert([{
+            student_name: studentName,
+            email: email,
+            phone: phone,
+            university: university,
+            faculty: faculty,
+            major: major,
+            supervisor: supervisor,
+            co_supervisor: coSupervisor,
+            is_sponsored: isSponsored, // Supabase boolean handles true/false directly
+            sponsor_company: sponsorCompany,
+            company_mentor: companyMentor,
+            grad_year: gradYear,
+            domains: JSON.stringify(domains), // Store array as string
+            project_title: projectTitle,
+            peers_count: peersCount,
+            doc_link: docLink
+        }])
+        .select();
+
+    if (error) {
+        console.error("Supabase Insert Error:", error.message);
+        return res.status(500).json({ error: "Failed to save project: " + error.message });
+    }
+
+    res.json({ success: true, message: "Project registered successfully!", id: data[0].id });
+});
+
+// 3. API: Get All Projects (For Dashboard)
+app.get('/api/grad-projects', async (req, res) => {
+    // Select all columns, order by newest first
+    const { data, error } = await supabase
+        .from('graduation_projects')
+        .select('*')
+        .order('grad_year', { ascending: false })
+        .order('submitted_at', { ascending: false });
+
+    if (error) {
+        console.error("Supabase Fetch Error:", error.message);
+        return res.status(500).json({ error: "Database error" });
+    }
+
+    // Process data to match frontend expectations
+    const processedRows = data.map(row => {
+        let parsedDomains = [];
+        try {
+            // Parse JSON string back to Array, handle if it's already an object
+            parsedDomains = typeof row.domains === 'string' ? JSON.parse(row.domains) : row.domains;
+        } catch (e) {
+            parsedDomains = [];
+        }
+
+        return {
+            ...row,
+            domains: parsedDomains || [],
+            // Convert Boolean to "Yes/No" for the frontend display
+            is_sponsored: row.is_sponsored ? 'Yes' : 'No' 
+        };
+    });
+
+    res.json(processedRows);
+});
+
+
+
+
+
 
 // ================================================================
 //  HELPERS & STARTUP

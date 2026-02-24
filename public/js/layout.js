@@ -29,7 +29,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     <a href="/scanner" class="nav-link ${path === '/scanner' ? 'active' : ''}">Scanner</a>
                     <a href="/explorer" class="nav-link ${path === '/explorer' ? 'active' : ''}">Explorer</a>
                     <a href="/companies.html" class="nav-link ${path === '/companies.html' ? 'active' : ''}">Companies</a>
-
+                    <a href="/grad-form.html" class="nav-link ${path === '/grad-form.html' ? 'active' : ''}">Register Project</a>
+                    <a href="/grad-dashboard" class="nav-link">Database</a> 
+                    <a href="/team.html" class="nav-link ${path === '/team.html' ? 'active' : ''}">Team</a>
                     ${authLink}
                 </nav>
                 <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); cursor:pointer; font-size:1.2rem;">

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects Dashboard - Scholar Nexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        .dashboard-container {
+            max-width: 1400px;
+            width: 95%;
+            margin: 30px auto;
+        }
+
+        /* Filter Bar Styles */
+        .filter-bar {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 6px;
+        }
+
+        .btn-export {
+            background: #10b981; /* Green */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 40px;
+            justify-content: center;
+        }
+        .btn-export:hover { background: #059669; }
+
+        /* Table Styles */
+        .table-wrapper {
+            overflow-x: auto;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(255,255,255,0.05);
+            color: var(--accent);
+            font-weight: 700;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-right: 4px;
+            margin-bottom: 4px;
+            background: var(--border);
+        }
+
+        .tag.domain { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .tag.sponsor { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+        .project-link {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+        
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div id="app-header"></div>
+
+    <div class="dashboard-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="font-family: var(--font-header);">Graduation Projects Database</h1>
+            <span id="count-badge" style="background: var(--accent); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem;">Loading...</span>
+        </div>
+
+        <!-- FILTERS -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Search (Title, Student, Prof)</label>
+                <input type="text" id="searchFilter" class="filter-input" placeholder="Type to search...">
+            </div>
+            
+            <div class="filter-group">
+                <label>University</label>
+                <select id="uniFilter" class="filter-input">
+                    <option value="All">All Universities</option>
+                    <!-- Populated via JS -->
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Domain / Track</label>
+                <select id="domainFilter" class="filter-input">
+                    <option value="All">All Domains</option>
+                    <option value="Digital">Digital IC</option>
+                    <option value="Analog">Analog IC</option>
+                    <option value="RF">RF / Microwave</option>
+                    <option value="Antenna">Antenna</option>
+                    <option value="Embedded">Embedded Systems</option>
+                    <option value="AI">AI / ML</option>
+                    <option value="Cybersecurity">Cybersecurity</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Graduation Year</label>
+                <select id="yearFilter" class="filter-input">
+                    <option value="All">All Years</option>
+                    <!-- Populated via JS -->
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Sponsorship</label>
+                <select id="sponsorFilter" class="filter-input">
+                    <option value="All">Any Status</option>
+                    <option value="Yes">Sponsored</option>
+                    <option value="No">Not Sponsored</option>
+                </select>
+            </div>
+
+            <button onclick="exportToExcel()" class="btn-export">
+                <i class="fas fa-file-excel"></i> Export Result
+            </button>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-wrapper">
+            <table id="projectsTable">
+                <thead>
+                    <tr>
+                        <th>Project Title</th>
+                        <th>Student / Lead</th>
+                        <th>University</th>
+                        <th>Domains</th>
+                        <th>Supervisor</th>
+                        <th>Year</th>
+                        <th>Sponsored</th>
+                        <th>Doc</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Rows injected here -->
+                </tbody>
+            </table>
+            <div id="emptyState" class="empty-state" style="display: none;">No projects found matching your filters.</div>
+        </div>
+    </div>
+
+    <div id="app-footer"></div>
+    <script src="/js/layout.js"></script>
+
+    <script>
+        let allProjects = [];
+        let filteredProjects = [];
+
+        document.addEventListener('DOMContentLoaded', fetchData);
+
+        // Fetch Data from API
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/grad-projects');
+                const data = await res.json();
+                allProjects = data;
+                filteredProjects = data;
+                
+                populateFilters();
+                renderTable(allProjects);
+            } catch (err) {
+                console.error("Error fetching projects:", err);
+            }
+        }
+
+        // Populate Dropdowns dynamically based on available data
+        function populateFilters() {
+            // Unique Universities
+            const universities = [...new Set(allProjects.map(p => p.university))].sort();
+            const uniSelect = document.getElementById('uniFilter');
+            universities.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u;
+                opt.innerText = u;
+                uniSelect.appendChild(opt);
+            });
+
+            // Unique Years
+            const years = [...new Set(allProjects.map(p => p.grad_year))].sort((a,b) => b-a);
+            const yearSelect = document.getElementById('yearFilter');
+            years.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.innerText = y;
+                yearSelect.appendChild(opt);
+            });
+
+            // Attach Event Listeners
+            ['searchFilter', 'uniFilter', 'domainFilter', 'yearFilter', 'sponsorFilter'].forEach(id => {
+                document.getElementById(id).addEventListener('input', applyFilters);
+            });
+        }
+
+        // Filter Logic
+        function applyFilters() {
+            const search = document.getElementById('searchFilter').value.toLowerCase();
+            const uni = document.getElementById('uniFilter').value;
+            const domain = document.getElementById('domainFilter').value;
+            const year = document.getElementById('yearFilter').value;
+            const sponsor = document.getElementById('sponsorFilter').value;
+
+            filteredProjects = allProjects.filter(p => {
+                // Search Text (Title, Name, Supervisor, Email)
+                const textMatch = (
+                    p.project_title.toLowerCase().includes(search) || 
+                    p.student_name.toLowerCase().includes(search) ||
+                    p.supervisor.toLowerCase().includes(search)
+                );
+
+                // Exact Matches
+                const uniMatch = (uni === 'All') || (p.university === uni);
+                const yearMatch = (year === 'All') || (p.grad_year == year);
+                const sponsorMatch = (sponsor === 'All') || (p.is_sponsored === sponsor);
+                
+                // Array Match (Check if selected domain exists in project domains)
+                const domainMatch = (domain === 'All') || (p.domains && p.domains.includes(domain));
+
+                return textMatch && uniMatch && yearMatch && sponsorMatch && domainMatch;
+            });
+
+            renderTable(filteredProjects);
+        }
+
+        // Render HTML Table
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            const empty = document.getElementById('emptyState');
+            const badge = document.getElementById('count-badge');
+
+            tbody.innerHTML = '';
+            badge.innerText = `${data.length} Projects`;
+
+            if (data.length === 0) {
+                empty.style.display = 'block';
+                return;
+            } else {
+                empty.style.display = 'none';
+            }
+
+            data.forEach(p => {
+                const tr = document.createElement('tr');
+                
+                // Domain Tags
+                const domainTags = p.domains.map(d => `<span class="tag domain">${d}</span>`).join('');
+                
+                // Sponsor Tag
+                let sponsorHtml = p.is_sponsored === 'Yes' 
+                    ? `<span class="tag sponsor">${p.sponsor_company || 'Company'}</span>` 
+                    : '<span style="color:var(--text-muted)">-</span>';
+
+                tr.innerHTML = `
+                    <td style="font-weight:600;">${p.project_title}</td>
+                    <td>
+                        <div>${p.student_name}</div>
+                        <small style="color:var(--text-muted)">${p.email}</small>
+                    </td>
+                    <td>
+                        ${p.university}
+                        <div style="font-size:0.8rem; color:var(--text-muted)">${p.faculty}</div>
+                    </td>
+                    <td>${domainTags}</td>
+                    <td>${p.supervisor}</td>
+                    <td>${p.grad_year}</td>
+                    <td>${sponsorHtml}</td>
+                    <td>
+                        <a href="${p.doc_link}" target="_blank" class="project-link">
+                            <i class="fas fa-external-link-alt"></i> View
+                        </a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Export Functionality
+        function exportToExcel() {
+            if (filteredProjects.length === 0) {
+                alert("No data to export.");
+                return;
+            }
+
+            // Clean data for Excel (remove JSON arrays and format nicely)
+            const excelData = filteredProjects.map(p => ({
+                "Project Title": p.project_title,
+                "Student Name": p.student_name,
+                "Email": p.email,
+                "Phone": p.phone,
+                "University": p.university,
+                "Faculty": p.faculty,
+                "Major": p.major,
+                "Domains": p.domains.join(', '),
+                "Supervisor": p.supervisor,
+                "Co-Supervisor": p.co_supervisor || 'N/A',
+                "Grad Year": p.grad_year,
+                "Peers Count": p.peers_count,
+                "Sponsored": p.is_sponsored,
+                "Sponsor Company": p.sponsor_company || '',
+                "Company Mentor": p.company_mentor || '',
+                "Document Link": p.doc_link
+            }));
+
+            // Create Worksheet
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Projects");
+
+            // Save File
+            XLSX.writeFile(wb, "ScholarNexus_Projects.xlsx");
+        }
+    </script>
+</body>
+</html>

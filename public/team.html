@@ -1,0 +1,157 @@
+<!-- public/team.html -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Team - Scholar Nexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    <style>
+        .hero-section {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .prof-container {
+            position: relative;
+            display: inline-block;
+            margin-top: 40px;
+        }
+
+        /* The Trigger Name */
+        .prof-name-trigger {
+            font-family: var(--font-header);
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--text-main);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.4s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .prof-name-trigger:hover {
+            color: var(--accent);
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
+        /* The Hidden Card */
+        .prof-card {
+            position: absolute;
+            top: 110%; 
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            width: 350px;
+            background: var(--bg-card);
+            border: 1px solid var(--accent);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+            text-align: center;
+        }
+
+        /* Show card on hover of name OR hover of card itself */
+        .prof-container:hover .prof-card {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .prof-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--bg-body);
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: var(--accent);
+            border: 2px solid var(--border);
+        }
+
+        .prof-title {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .linkedin-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: #0077b5; /* LinkedIn Blue */
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: 0.2s;
+        }
+
+        .linkedin-btn:hover {
+            background: #005e93;
+            transform: scale(1.02);
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 50px auto;
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-header"></div>
+
+    <div class="container">
+        <div class="hero-section">
+            <p style="color: var(--accent); letter-spacing: 3px; text-transform: uppercase; font-weight: bold;">Leadership</p>
+            
+            <div class="prof-container">
+                <h1 class="prof-name-trigger">Prof. Sherif Hosny</h1>
+                
+                <div class="prof-card">
+                    <div class="prof-avatar">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <h3 style="margin-bottom: 5px;">Dr. Sherif Hosny</h3>
+                    <div class="prof-title">Project Supervisor & Mentor</div>
+                    <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+                        Guiding the next generation of engineers through innovative research and academic excellence in Electronics and Computer Engineering.
+                    </p>
+                    <a href="https://www.linkedin.com/in/sherif-hosny-phd-sm-ieee-b552632b/" target="_blank" class="linkedin-btn">
+                        <i class="fab fa-linkedin"></i> Connect on LinkedIn
+                    </a>
+                </div>
+            </div>
+            
+            <p style="margin-top: 30px; color: var(--text-muted);">Hover over the name to view profile</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="text-align: center;">
+            <h2 style="font-family: var(--font-header);">Computer Operators Team</h2>
+            <p style="margin-top: 10px; color: var(--text-muted);">The dedicated team behind Scholar Nexus.</p>
+            <!-- Add other team members here if needed later -->
+        </div>
+    </div>
+
+    <div id="app-footer"></div>
+    <script src="/js/layout.js"></script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!-- public/grad-form.html -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Project - Scholar Nexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    <style>
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-muted); }
+        .form-control {
+            width: 100%; padding: 12px;
+            background: var(--bg-body); border: 1px solid var(--border);
+            color: var(--text-main); border-radius: 6px;
+        }
+        .form-control:focus { outline: none; border-color: var(--accent); }
+        
+        .checkbox-group {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;
+            margin-top: 10px;
+        }
+        .checkbox-item {
+            background: var(--bg-body); padding: 10px; border-radius: 6px; border: 1px solid var(--border);
+            cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;
+        }
+        .checkbox-item:hover { border-color: var(--accent); }
+        
+        .hidden-field { display: none; margin-top: 15px; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); }}
+
+        .section-title {
+            border-bottom: 1px solid var(--border); padding-bottom: 10px; margin: 30px 0 20px;
+            font-family: var(--font-header); font-size: 1.2rem; color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div id="app-header"></div>
+
+    <div class="container">
+        <div class="form-container">
+            <h1 style="font-family: var(--font-header); text-align: center; margin-bottom: 10px;">Register Graduation Project</h1>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 30px;">Archive your academic achievement in the Scholar Nexus database.</p>
+
+            <form id="gradForm">
+                <!-- 1. Personal Info -->
+                <div class="section-title">Team Leader Information</div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="studentName" class="form-control" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" name="phone" class="form-control" required>
+                    </div>
+                </div>
+
+                <!-- 2. Academic Info -->
+                <div class="section-title">Academic Details</div>
+                <div class="form-group">
+                    <label>University</label>
+                    <select id="universitySelect" name="university" class="form-control" onchange="toggleOtherUni()" required>
+                        <option value="" disabled selected>Select University</option>
+                        <option value="Cairo University">Cairo University</option>
+                        <option value="Ain Shams University">Ain Shams University</option>
+                        <option value="Alexandria University">Alexandria University</option>
+                        <option value="AUC">American University in Cairo (AUC)</option>
+                        <option value="GUC">German University in Cairo (GUC)</option>
+                        <option value="Nile University">Nile University</option>
+                        <option value="Zewail City">Zewail City of Science and Technology</option>
+                        <option value="Helwan University">Helwan University</option>
+                        <option value="Mansoura University">Mansoura University</option>
+                        <option value="Other">Other (Enter Manually)</option>
+                    </select>
+                    <input type="text" id="otherUniInput" name="otherUniversity" class="form-control hidden-field" placeholder="Enter University Name">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Faculty</label>
+                        <input type="text" name="faculty" class="form-control" placeholder="e.g. Engineering" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Major / Department</label>
+                        <input type="text" name="major" class="form-control" placeholder="e.g. Electronics & Comm" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Supervising Professor</label>
+                    <input type="text" name="supervisor" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Co-Supervisor (Optional)</label>
+                    <input type="text" name="coSupervisor" class="form-control" placeholder="If applicable">
+                </div>
+
+                <!-- 3. Project Details -->
+                <div class="section-title">Project Information</div>
+                
+                <div class="form-group">
+                    <label>Project Title</label>
+                    <input type="text" name="projectTitle" class="form-control" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Graduation Year</label>
+                        <input type="number" name="gradYear" class="form-control" min="2020" max="2030" value="2026" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Number of Peers in Team</label>
+                        <input type="number" name="peersCount" class="form-control" min="1" max="10" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Project Domain (Select all that apply)</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" name="domain" value="Digital"> Digital IC</label>
+                        <label class="checkbox-item"><input type="checkbox" name="domain" value="Analog"> Analog IC</label>
+                        <label class="checkbox-item"><input type="checkbox" name="domain" value="RF"> RF / Microwave</label>
+                        <label class="checkbox-item"><input type="checkbox" name="domain" value="Antenna"> Antenna</label>
+                        <label class="checkbox-item"><input type="checkbox" name="domain" value="Embedded"> Embedded Systems</label>
+                        <label class="checkbox-item"><input type="checkbox" name="domain" value="AI"> AI / ML</label>
+                        <label class="checkbox-item"><input type="checkbox" name="domain" value="Cybersecurity"> Cybersecurity</label>
+                        <label class="checkbox-item"><input type="checkbox" id="otherDomainCheck" onchange="toggleOtherDomain()"> Other</label>
+                    </div>
+                    <input type="text" id="otherDomainInput" class="form-control hidden-field" placeholder="Specify Domain">
+                </div>
+
+                <!-- 4. Sponsorship -->
+                <div class="form-group" style="background: var(--bg-body); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="sponsorCheck" onchange="toggleSponsor()"> 
+                        <span style="font-size: 1rem; color: var(--text-main);">Is this project sponsored by a company?</span>
+                    </label>
+
+                    <div id="sponsorFields" class="hidden-field">
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label>Company Name</label>
+                            <input type="text" name="sponsorCompany" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Company Mentor Name</label>
+                            <input type="text" name="companyMentor" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Documentation -->
+                <div class="section-title">Documentation</div>
+                <div class="form-group">
+                    <label>Thesis / Documentation Link</label>
+                    <input type="url" name="docLink" class="form-control" placeholder="https://drive.google.com/..." required>
+                    <small style="color: var(--text-muted);">Please provide a valid URL to your Google Drive, GitHub, or Overleaf.</small>
+                </div>
+
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 20px;">
+                    Submit Project
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-footer"></div>
+    <script src="/js/layout.js"></script>
+
+    <script>
+        function toggleOtherUni() {
+            const select = document.getElementById('universitySelect');
+            const input = document.getElementById('otherUniInput');
+            if (select.value === 'Other') {
+                input.style.display = 'block';
+                input.required = true;
+            } else {
+                input.style.display = 'none';
+                input.required = false;
+            }
+        }
+
+        function toggleOtherDomain() {
+            const check = document.getElementById('otherDomainCheck');
+            const input = document.getElementById('otherDomainInput');
+            input.style.display = check.checked ? 'block' : 'none';
+        }
+
+        function toggleSponsor() {
+            const check = document.getElementById('sponsorCheck');
+            const fields = document.getElementById('sponsorFields');
+            fields.style.display = check.checked ? 'block' : 'none';
+        }
+
+        document.getElementById('gradForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            // Handle University (Select vs Input)
+            let finalUni = formData.get('university');
+            if(finalUni === 'Other') finalUni = document.getElementById('otherUniInput').value;
+
+            // Handle Domains (Checkbox Array)
+            const domains = [];
+            document.querySelectorAll('input[name="domain"]:checked').forEach(cb => domains.push(cb.value));
+            if(document.getElementById('otherDomainCheck').checked) {
+                const otherVal = document.getElementById('otherDomainInput').value;
+                if(otherVal) domains.push(otherVal);
+            }
+
+            const payload = {
+                studentName: formData.get('studentName'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                university: finalUni,
+                faculty: formData.get('faculty'),
+                major: formData.get('major'),
+                supervisor: formData.get('supervisor'),
+                coSupervisor: formData.get('coSupervisor'),
+                isSponsored: document.getElementById('sponsorCheck').checked,
+                sponsorCompany: formData.get('sponsorCompany'),
+                companyMentor: formData.get('companyMentor'),
+                gradYear: formData.get('gradYear'),
+                domains: domains,
+                projectTitle: formData.get('projectTitle'),
+                peersCount: formData.get('peersCount'),
+                docLink: formData.get('docLink')
+            };
+
+            try {
+                const res = await fetch('/api/grad-projects/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await res.json();
+                if(result.success) {
+                    alert('Project Registered Successfully!');
+                    window.location.href = '/';
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch(err) {
+                console.error(err);
+                alert('Submission failed.');
+            }
+        });
+    </script>
+</body>
+</html>
