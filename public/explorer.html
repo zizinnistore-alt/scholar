@@ -1,16 +1,15 @@
+<!-- REPLACE YOUR explorer.html WITH THIS -->
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EXPLORER // NEXUS</title>
+    <title>PAPER EXPLORER // NEXUS</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link rel="stylesheet" href="/css/global.css">
     
     <style>
-        
         :root {
             --bg-body: #0f1115; --bg-card: #161920; --border: #2a2f3a; 
             --text-main: #f1f5f9; --text-muted: #94a3b8; 
@@ -18,48 +17,33 @@
             --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
         }
 
-        :root {
-            --bg-body: #f8fafc; --bg-card: #ffffff; --border: #cbd5e1; 
-            --text-main: #0f172a; --text-muted: #64748b; 
-            --accent: #2563eb; --accent-hover: #1d4ed8; --success: #059669;
-            --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
-        }
-
         body {
             margin: 0; font-family: var(--font-main);
             background: var(--bg-body); color: var(--text-main);
-            transition: background 0.3s ease, color 0.3s ease;
         }
 
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-
         
         .explorer-layout {
-            display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-top: 20px;
-            align-items: start;
+            display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-top: 20px; align-items: start;
         }
-        @media (max-width: 900px) {
-            .explorer-layout { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 900px) { .explorer-layout { grid-template-columns: 1fr; } }
 
-        
+        /* Left Panel */
         .panel {
             background: var(--bg-card); border: 1px solid var(--border);
             border-radius: 16px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             position: sticky; top: 90px;
         }
-
         .panel-title {
             font-family: var(--font-header); font-size: 1.4rem; color: var(--text-main);
             margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px;
         }
-
         .form-group { margin-bottom: 20px; }
         .form-group label {
             display: block; font-size: 0.85rem; font-weight: 600; 
             color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px;
         }
-        
         input, textarea {
             width: 100%; background: var(--bg-body); border: 1px solid var(--border);
             color: var(--text-main); padding: 12px 15px; border-radius: 8px;
@@ -67,7 +51,7 @@
             box-sizing: border-box;
         }
         textarea { resize: vertical; min-height: 140px; }
-        input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        input:focus, textarea:focus { border-color: var(--accent); }
 
         .btn-action {
             background: var(--accent); color: #fff; border: none; padding: 15px;
@@ -75,126 +59,142 @@
             font-weight: 700; cursor: pointer; transition: 0.3s;
             display: flex; justify-content: center; align-items: center; gap: 10px;
         }
-        .btn-action:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 15px -5px var(--accent); }
+        .btn-action:hover { background: var(--accent-hover); transform: translateY(-2px); }
 
-        
+        /* Results Area */
         .main-view { min-height: 60vh; }
-
         
-        .queries-container {
-            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px;
-            padding: 15px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
-        }
-        .query-tag {
-            background: rgba(59, 130, 246, 0.1); color: var(--accent); border: 1px solid rgba(59, 130, 246, 0.2);
-            padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+        .results-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
         }
 
-        
-        .expert-card {
-            display: grid; grid-template-columns: 50px 3fr 1fr 1fr; gap: 15px; align-items: center;
+        /* Paper Card Design */
+        .paper-card {
             background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
-            padding: 20px; margin-bottom: 15px; cursor: pointer; transition: all 0.3s ease;
+            padding: 20px; margin-bottom: 20px; transition: all 0.3s ease;
+            position: relative; overflow: hidden;
         }
-        .expert-card:hover {
-            border-color: var(--accent); transform: translateX(8px);
-            box-shadow: 0 10px 20px -10px rgba(0,0,0,0.2);
-        }
-
-        .rank-badge {
-            width: 40px; height: 40px; background: rgba(59, 130, 246, 0.1); color: var(--accent);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            font-family: var(--font-header); font-size: 1.2rem; font-weight: bold;
-        }
-
-        .lb-name { font-weight: 700; color: var(--text-main); font-size: 1.1rem; margin-bottom: 5px; }
-        .lb-meta { color: var(--text-muted); font-size: 0.85rem; }
+        .paper-card:hover { border-color: var(--accent); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         
-        .score-track { background: var(--bg-body); height: 6px; border-radius: 3px; margin-top: 8px; overflow: hidden; }
-        .score-fill { background: var(--accent); height: 100%; border-radius: 3px; transition: width 1s ease-out; }
+        .paper-title {
+            font-size: 1.2rem; font-weight: 700; color: var(--text-main);
+            margin-bottom: 8px; line-height: 1.4;
+        }
+        .paper-title a { text-decoration: none; color: inherit; transition: 0.2s; }
+        .paper-title a:hover { color: var(--accent); }
 
-        .stat-box { display: flex; flex-direction: column; }
-        .stat-val { color: var(--text-main); font-size: 1.2rem; font-weight: 700; font-family: var(--font-header); }
-        .stat-label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .paper-meta {
+            display: flex; flex-wrap: wrap; gap: 15px; font-size: 0.85rem; 
+            color: var(--text-muted); margin-bottom: 15px;
+        }
+        .meta-item { display: flex; align-items: center; gap: 5px; }
+        .meta-item i { color: var(--accent); }
 
-        
-        .list-header {
-            display: grid; grid-template-columns: 50px 3fr 1fr 1fr; gap: 15px;
-            padding: 0 20px 10px 20px; color: var(--text-muted); font-size: 0.85rem;
-            font-weight: 600; text-transform: uppercase; border-bottom: 1px solid var(--border); margin-bottom: 15px;
+        .paper-abstract {
+            font-size: 0.95rem; color: #cbd5e1; line-height: 1.6;
+            margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical; overflow: hidden;
         }
 
-        @media (max-width: 768px) {
-            .expert-card { grid-template-columns: 50px 1fr; gap: 10px; }
-            .stat-box { display: none; } 
-            .list-header { display: none; }
+        .paper-authors {
+            font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .paper-actions {
+            display: flex; gap: 10px; border-top: 1px solid var(--border); padding-top: 15px;
+        }
+        .btn-sm {
+            padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text-main);
+            display: flex; align-items: center; gap: 6px; text-decoration: none; transition: 0.2s;
+        }
+        .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-sm.primary { background: rgba(59, 130, 246, 0.1); color: var(--accent); border-color: rgba(59, 130, 246, 0.2); }
+        .btn-sm.primary:hover { background: var(--accent); color: white; }
+
+        .badge-oa {
+            background: rgba(16, 185, 129, 0.1); color: var(--success); 
+            padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; border: 1px solid rgba(16, 185, 129, 0.2);
         }
     </style>
 </head>
 <body>
 
-
-    <div id="app-header"></div>
+    <div id="app-header"></div> <!-- Assumed existing layout -->
 
     <div class="container">
         <div class="explorer-layout">
             
-        
+            <!-- CONTROLS -->
             <div class="panel">
-                <h2 class="panel-title"><i class="fas fa-search-location" style="color:var(--accent)"></i> Topic Scanner</h2>
+                <h2 class="panel-title"><i class="fas fa-book-reader" style="color:var(--accent)"></i> Paper Explorer</h2>
                 
                 <div class="form-group">
-                    <label>RESEARCH IDEA / ABSTRACT</label>
-                    <textarea id="q-idea" placeholder="Paste your abstract or describe your research idea here to find the top global experts..."></textarea>
+                    <label>SEARCH QUERY OR ABSTRACT</label>
+                    <textarea id="q-input" placeholder="Enter keywords, a research question, or paste an abstract..."></textarea>
                 </div>
                 
                 <div class="form-group">
-                    <label>FILTER BY YEAR (OPTIONAL)</label>
-                    <input type="number" id="f-year" placeholder="Min Year (e.g. 2023)">
+                    <label>PAPER ID (FOR SIMILARITY)</label>
+                    <input type="text" id="q-id" placeholder="Optional: Paste S2 Paper ID to find similar">
                 </div>
 
-                <button class="btn-action" onclick="exploreTopic()">
-                    SCAN NETWORK <i class="fas fa-satellite-dish"></i>
+                <div class="form-group">
+                    <label>YEAR FILTER</label>
+                    <input type="number" id="f-year" placeholder="e.g. 2023">
+                </div>
+
+                <button class="btn-action" onclick="fetchPapers('search')">
+                    SEARCH PAPERS <i class="fas fa-search"></i>
                 </button>
+                
+                <div style="margin-top: 10px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
+                    Powered by <strong style="color:var(--text-main)">Semantic Scholar</strong>
+                </div>
             </div>
 
-        
+            <!-- RESULTS -->
             <div class="main-view" id="main-view">
                 <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 50px 20px;">
-                    <div style="background: var(--bg-card); width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-                        <i class="fas fa-network-wired" style="font-size: 3rem; color: var(--accent); opacity: 0.8;"></i>
+                    <div style="background: var(--bg-card); width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border: 1px solid var(--border);">
+                        <i class="fas fa-layer-group" style="font-size: 3rem; color: var(--accent); opacity: 0.8;"></i>
                     </div>
-                    <h2 style="font-family: var(--font-header); color: var(--text-main); margin: 0 0 10px 0;">AWAITING QUERY</h2>
-                    <p style="max-width: 400px; line-height: 1.6; margin: 0;">Enter your research abstract on the left to map global knowledge and discover top authors in your specific niche.</p>
+                    <h2>Start Your Discovery</h2>
+                    <p>Enter a topic to find papers, or use "Find Similar" on results to explore the network.</p>
                 </div>
             </div>
 
         </div>
     </div>
 
-
-    <div id="app-footer"></div>
-
-    <!-- Theme Toggle) -->
-    <script src="/js/layout.js"></script>
-
     <script>
-        async function exploreTopic() {
-            const idea = document.getElementById('q-idea').value;
-            const minYear = document.getElementById('f-year').value;
+        async function fetchPapers(mode, specificId = null) {
+            const query = document.getElementById('q-input').value;
+            const paperIdInput = document.getElementById('q-id').value;
+            const year = document.getElementById('f-year').value;
             const view = document.getElementById('main-view');
 
-            if(!idea) {
-                alert("Please enter a research idea or abstract.");
-                return;
+            // Determine effective ID and Mode
+            let effectiveId = specificId || paperIdInput;
+            let effectiveMode = mode;
+            
+            // If user clicked Search but filled in ID, switch to recommendation mode
+            if(mode === 'search' && effectiveId && !query) {
+                effectiveMode = 'recommend';
             }
 
-            // (Loading State)
+            if(effectiveMode === 'search' && !query) {
+                alert("Please enter a search query."); return;
+            }
+
+            // Loading State
             view.innerHTML = `
                 <div style="text-align:center; padding: 100px 20px;">
-                    <i class="fas fa-circle-notch fa-spin" style="font-size:3.5rem; color:var(--accent); margin-bottom:25px;"></i>
-                    <h2 style="font-family: var(--font-header); color: var(--text-main); margin: 0 0 10px 0;">MAPPING KNOWLEDGE BASE...</h2>
-                    <p style="color: var(--text-muted);">Extracting Keywords &bull; Fetching Papers &bull; Ranking Authors</p>
+                    <i class="fas fa-circle-notch fa-spin" style="font-size:3rem; color:var(--accent); margin-bottom:20px;"></i>
+                    <h3>Retrieving Papers...</h3>
+                    <p style="color: var(--text-muted);">Fetching data from Semantic Scholar API</p>
                 </div>
             `;
 
@@ -202,79 +202,70 @@
                 const res = await fetch('/api/explore', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ idea, minYear })
+                    body: JSON.stringify({ 
+                        mode: effectiveMode, 
+                        query: query, 
+                        paperId: effectiveId,
+                        year: year 
+                    })
                 });
+                
                 const data = await res.json();
-
-                view.innerHTML = `
-                    <div class="queries-container">
-                        <span style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; margin-right: 10px;">
-                            <i class="fas fa-tags" style="margin-right: 5px;"></i> AI Keywords:
-                        </span>
-                        ${data.queries.map(q => `<span class="query-tag">${q}</span>`).join('')}
-                    </div>
-                    
-                    <div class="list-header">
-                        <div>RANK</div>
-                        <div>AUTHOR & RELEVANCE</div>
-                        <div>TOPIC PAPERS</div>
-                        <div>LAST ACTIVE</div>
-                    </div>
-                `;
-
-                if(data.authors.length === 0) {
-                    view.innerHTML += `
-                        <div style="background: var(--bg-card); padding: 40px; text-align: center; border-radius: 12px; border: 1px solid var(--border);">
-                            <i class="fas fa-ghost" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 15px;"></i>
-                            <h3 style="margin: 0; color: var(--text-main);">No Experts Found</h3>
-                            <p style="color: var(--text-muted); margin-top: 10px;">Try adjusting your abstract or the minimum year filter.</p>
-                        </div>
-                    `;
+                
+                if(!data.papers || data.papers.length === 0) {
+                    view.innerHTML = `<div style="text-align:center; padding:50px;"><h3>No papers found.</h3></div>`;
                     return;
                 }
 
-                const maxScore = data.authors.score || 1;
+                // Render Header
+                let html = `
+                    <div class="results-header">
+                        <span>Found <strong>${data.total || data.papers.length}</strong> Results for "${effectiveMode === 'recommend' ? 'Similar to ' + effectiveId : query}"</span>
+                    </div>
+                `;
 
-           
-                data.authors.forEach((a, index) => {
-                    const scorePercent = Math.min((a.score / maxScore) * 100, 100);
+                // Render Cards
+                data.papers.forEach(p => {
+                    const authors = p.authors ? p.authors.map(a => a.name).join(', ') : 'Unknown Authors';
+                    const venue = p.venue || 'Unknown Venue';
+                    const abstract = p.abstract || 'No abstract available for this paper.';
+                    const citations = p.citationCount || 0;
+                    const pdfLink = p.openAccessPdf ? p.openAccessPdf.url : null;
+                    const s2Link = p.url;
                     
-                    const row = document.createElement('div');
-                    row.className = 'expert-card';
-                    row.innerHTML = `
-                        <div class="rank-badge">#${index + 1}</div>
-                        <div>
-                            <div class="lb-name">${a.name}</div>
-                            <div class="lb-meta">Relevance Score: ${Math.round(a.score)}</div>
-                            <div class="score-track"><div class="score-fill" style="width:${scorePercent}%"></div></div>
+                    html += `
+                    <div class="paper-card">
+                        <div class="paper-title">
+                            <a href="${s2Link}" target="_blank">${p.title}</a>
+                            ${pdfLink ? '<span class="badge-oa"><i class="fas fa-lock-open"></i> OA</span>' : ''}
                         </div>
-                        <div class="stat-box">
-                            <span class="stat-val" style="color: var(--success);">${a.topic_papers}</span>
-                            <span class="stat-label">Publications</span>
+                        
+                        <div class="paper-authors">${authors}</div>
+                        
+                        <div class="paper-meta">
+                            <div class="meta-item"><i class="far fa-calendar"></i> ${p.year || 'N/A'}</div>
+                            <div class="meta-item"><i class="fas fa-university"></i> ${venue}</div>
+                            <div class="meta-item"><i class="fas fa-quote-right"></i> ${citations} Citations</div>
                         </div>
-                        <div class="stat-box">
-                            <span class="stat-val">${a.last_active}</span>
-                            <span class="stat-label">Last Paper</span>
+
+                        <div class="paper-abstract">${abstract}</div>
+
+                        <div class="paper-actions">
+                            ${pdfLink ? `<a href="${pdfLink}" target="_blank" class="btn-sm"><i class="fas fa-file-pdf"></i> PDF</a>` : ''}
+                            <a href="${s2Link}" target="_blank" class="btn-sm"><i class="fas fa-external-link-alt"></i> View on S2</a>
+                            <button onclick="fetchPapers('recommend', '${p.paperId}')" class="btn-sm primary">
+                                <i class="fas fa-project-diagram"></i> Find Similar
+                            </button>
                         </div>
+                    </div>
                     `;
-                    
-                    
-                    row.onclick = () => {
-                        window.location.href = `/scanner?id=${a.id}&n=${encodeURIComponent(a.name)}`;
-                    };
-                    
-                    view.appendChild(row);
                 });
+
+                view.innerHTML = html;
 
             } catch (e) {
                 console.error(e);
-                view.innerHTML = `
-                    <div style="background: rgba(239, 68, 68, 0.1); padding: 40px; text-align: center; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ef4444; margin-bottom: 15px;"></i>
-                        <h3 style="margin: 0; color: #ef4444;">Exploration Failed</h3>
-                        <p style="color: var(--text-muted); margin-top: 10px;">There was an error connecting to the API. Please try again later.</p>
-                    </div>
-                `;
+                view.innerHTML = `<div style="text-align:center; color:#ef4444; padding:50px;"><h3>Error connecting to API.</h3></div>`;
             }
         }
     </script>
