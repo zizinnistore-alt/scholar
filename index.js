@@ -558,85 +558,52 @@ app.post('/api/analyze', async (req, res) => {
  * API: Explore Idea
  * AI converts idea to keywords -> Parallel Search -> Ranking Algorithm
  */
+// ================================================================
+//  SECTION 3: TOPIC EXPLORER API
+// ================================================================
+
 app.post('/api/explore', async (req, res) => {
-    const { idea, minYear } = req.body;
+    const { mode, query, paperId, year } = req.body;
+    
+    const FIELDS = 'paperId,title,abstract,venue,year,authors,citationCount,openAccessPdf,url,externalIds';
     
     try {
-        // 1. AI: Convert Idea to Keywords
-        const keywordPrompt = `
-            Act as a Research Librarian. Convert this research idea into 4 distinct, specific academic search queries.
-            Idea: "${idea}"
-            Output ONLY a JSON array of strings. Example: ["Deep Learning in MRI", "CNN Tumor Detection"]
-        `;
-        
-        const aiKeywords = await model.generateContent(keywordPrompt);
-        const text = aiKeywords.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-        let queries = [];
-        try { queries = JSON.parse(text); } catch(e) { queries = [idea]; }
+        let apiUrl = '';
+        let params = { fields: FIELDS, limit: 20 };
 
-        // 2. Parallel Search on S2
-        const searchPromises = queries.map(q => 
-            axios.get(`https://api.semanticscholar.org/graph/v1/paper/search`, {
-                params: { 
-                    query: q, 
-                    limit: 20, 
-                    fields: 'title,year,citationCount,authors.name,authors.authorId,authors.paperCount,authors.hIndex,authors.citationCount' 
-                },
-                headers: { 'x-api-key': process.env.S2_API_KEY || '' }
-            }).catch(e => ({ data: { data: [] } }))
-        );
+        if (mode === 'recommend' && paperId) {
+            let targetId = paperId;
+            if (/^\d+$/.test(String(targetId))) {
+                targetId = `CorpusId:${targetId}`;
+            }
 
-        const results = await Promise.all(searchPromises);
-        
-        // 3. Process & Rank Authors
-        const authorMap = {};
+            console.log(`[S2] Recommend for ID: ${targetId}`);
+            apiUrl = `https://api.semanticscholar.org/graph/v1/paper/${targetId}/recommendations`;
+        } else {
+            apiUrl = `https://api.semanticscholar.org/graph/v1/paper/search`;
+            params.query = query;
+            if (year) params.year = `${year}-`; 
+        }
 
-        results.forEach(response => {
-            const papers = response.data.data || [];
-            papers.forEach(paper => {
-                if (minYear && paper.year < minYear) return;
-
-                paper.authors.forEach(auth => {
-                    if (!auth.authorId) return;
-
-                    if (!authorMap[auth.authorId]) {
-                        authorMap[auth.authorId] = {
-                            id: auth.authorId,
-                            name: auth.name,
-                            hIndex: auth.hIndex || 0,
-                            citationCount: auth.citationCount || 0,
-                            topic_papers: 0,
-                            topic_citations: 0,
-                            last_active: 0
-                        };
-                    }
-
-                    const stats = authorMap[auth.authorId];
-                    stats.topic_papers += 1;
-                    stats.topic_citations += (paper.citationCount || 0);
-                    if (paper.year > stats.last_active) stats.last_active = paper.year;
-                });
-            });
+        const response = await axios.get(apiUrl, {
+            params: params,
+            headers: { 'x-api-key': process.env.S2_API_KEY || '' }
         });
-
-        // 4. Scoring Algorithm
-        let leaderboard = Object.values(authorMap);
-        // Score = (Topic Papers * 20) + (Topic Citations * 1) + (H-Index * 0.5)
-        leaderboard.forEach(a => {
-            a.score = (a.topic_papers * 20) + (a.topic_citations * 1) + (a.hIndex * 0.5);
-        });
-
-        // Sort descending
-        leaderboard.sort((a, b) => b.score - a.score);
 
         res.json({ 
-            queries: queries, 
-            authors: leaderboard.slice(0, 50) 
+            success: true,
+            total: response.data.total || response.data.data?.length || 0,
+            papers: response.data.data || [] 
         });
 
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: "Exploration Failed" });
+        console.error(`[S2 API Error] Mode: ${mode} | ID: ${paperId} | Msg: ${e.message}`);
+        
+        if(e.response && e.response.status === 404) {
+            return res.json({ success: true, papers: [], total: 0, message: "No recommendations found for this specific paper." });
+        }
+        
+        res.status(500).json({ error: "Search service unavailable." });
     }
 });
 
@@ -1264,5 +1231,6 @@ function getFuzzyValue(row, keywords) {
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
+
 
 module.exports = app;
