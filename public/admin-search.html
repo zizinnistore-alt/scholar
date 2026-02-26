@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXTERNAL JOB SCANNER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css"> <!-- Your existing CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .split-layout { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-top: 30px; }
+        .search-panel { background: var(--bg-card); padding: 25px; border-radius: 12px; border: 1px solid var(--border); height: fit-content; }
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        
+        .job-card { 
+            background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 12px;
+            display: flex; flex-direction: column; gap: 10px; transition: 0.3s;
+        }
+        .job-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+        
+        .snippet { font-size: 0.85rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 10px; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; border-radius: 6px; }
+        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        input, select { width: 100%; padding: 10px; margin-bottom: 15px; background: var(--bg-body); border: 1px solid var(--border); color: white; border-radius: 6px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div id="app-header"></div> <!-- Reusing your header -->
+
+    <div class="container">
+        <h1 style="font-family: var(--font-header);">EXTERNAL JOB SCANNER</h1>
+        <p style="color: var(--text-muted);">Search LinkedIn and external job boards directly.</p>
+
+        <div class="split-layout">
+            
+            <!-- CONTROLS -->
+            <div class="search-panel">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="setMode('general')">General Search</button>
+                    <button class="tab-btn" onclick="setMode('company')">Company Scan</button>
+                </div>
+
+                <div id="form-general">
+                    <label>Job Title / Keywords</label>
+                    <input type="text" id="g-query" placeholder="e.g. AI Researcher">
+                    
+                    <label>Target Location</label>
+                    <input type="text" id="g-location" placeholder="e.g. Egypt, Remote">
+                </div>
+
+                <div id="form-company" style="display: none;">
+                    <label>Target Company</label>
+                    <input type="text" id="c-name" placeholder="e.g. Microsoft">
+                    
+                    <label>City / Country</label>
+                    <input type="text" id="c-location" placeholder="e.g. Cairo">
+                </div>
+
+                <button class="btn-primary" style="width: 100%; margin-top: 20px;" onclick="performSearch()">
+                    <i class="fas fa-search"></i> SCAN WEB
+                </button>
+            </div>
+
+            <!-- RESULTS -->
+            <div>
+                <div style="margin-bottom: 15px; display: flex; justify-content: space-between;">
+                    <span id="result-count" style="color: var(--text-muted);">Results: 0</span>
+                    <button onclick="document.getElementById('results-area').innerHTML=''" style="background:none; border:none; color: var(--danger); cursor:pointer;">Clear</button>
+                </div>
+                <div class="results-grid" id="results-area">
+                    <!-- Results injected here -->
+                    <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-muted); border: 2px dashed var(--border); border-radius: 12px;">
+                        Ready to scan. Select a mode and search.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/layout.js"></script>
+    <script>
+        let currentMode = 'general';
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if(mode === 'general') {
+                document.getElementById('form-general').style.display = 'block';
+                document.getElementById('form-company').style.display = 'none';
+            } else {
+                document.getElementById('form-general').style.display = 'none';
+                document.getElementById('form-company').style.display = 'block';
+            }
+        }
+
+        async function performSearch() {
+            const btn = document.querySelector('.btn-primary');
+            const resultsArea = document.getElementById('results-area');
+            
+            // Lock UI
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SCANNING...';
+            btn.disabled = true;
+            resultsArea.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Contacting Google API...</div>';
+
+            // Prepare Data
+            let query, location;
+            if(currentMode === 'general') {
+                query = document.getElementById('g-query').value;
+                location = document.getElementById('g-location').value;
+            } else {
+                query = document.getElementById('c-name').value;
+                location = document.getElementById('c-location').value;
+            }
+
+            if(!query || !location) {
+                Swal.fire('Missing Data', 'Please fill in all fields', 'warning');
+                btn.innerHTML = '<i class="fas fa-search"></i> SCAN WEB';
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/external-search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin', // السطر ده مهم جداً جداً 👈
+                    body: JSON.stringify({ query, location, type: currentMode })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || `Server Error: ${res.status}`);
+                }
+
+                const response = await res.json();
+                
+                if(response.data && response.data.length > 0) {
+                    renderResults(response.data);
+                } else {
+                    resultsArea.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 30px; border: 1px solid var(--border); border-radius: 8px;">
+                            <h3 style="color: var(--danger)">No Results Found</h3>
+                            <p style="color: var(--text-muted)">Google returned 0 jobs for this query.</p>
+                            <p style="font-size: 0.9rem;">Try broadening your search.</p>
+                        </div>`;
+                }
+
+            } catch (err) {
+                console.error(err);
+                resultsArea.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 30px; border: 1px solid var(--danger); background: rgba(255,0,0,0.05); border-radius: 8px;">
+                        <h3 style="color: var(--danger)">Search Failed</h3>
+                        <p>${err.message}</p>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Ensure you are logged in as Admin or check server logs.</p>
+                    </div>`;
+            } finally {
+                btn.innerHTML = '<i class="fas fa-search"></i> SCAN WEB';
+                btn.disabled = false;
+            }
+        }
+
+        function renderResults(jobs) {
+            const container = document.getElementById('results-area');
+            document.getElementById('result-count').innerText = `Results: ${jobs.length}`;
+            container.innerHTML = '';
+
+            jobs.forEach((job) => {
+                const card = document.createElement('div');
+                card.className = 'job-card';
+                card.innerHTML = `
+                    <div style="flex-grow: 1;">
+                        <strong style="color: var(--accent); font-size: 0.8rem; text-transform:uppercase;">
+                            <i class="${job.source === 'LinkedIn' ? 'fab fa-linkedin' : 'fas fa-globe'}"></i> ${job.source}
+                        </strong>
+                        <h3 style="margin: 5px 0; font-family: var(--font-header); font-size: 1.1rem; line-height: 1.4;">${job.title}</h3>
+                        <div style="font-size: 0.9rem; margin-bottom: 10px; color: var(--text-main);">
+                            <i class="fas fa-building"></i> <strong>${job.company}</strong> <br> 
+                            <i class="fas fa-map-marker-alt"></i> ${job.country}
+                        </div>
+                        <p class="snippet">${job.snippet}</p>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <a href="${job.link}" target="_blank" style="display: block; text-align:center; padding: 10px; background: var(--accent); color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.9rem; transition: 0.3s;">
+                            <i class="fas fa-external-link-alt"></i> View Job Post
+                        </a>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINKEDIN DIRECT SCANNER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .split-layout { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-top: 30px; }
+        .search-panel { background: var(--bg-card); padding: 25px; border-radius: 12px; border: 1px solid var(--border); height: fit-content; }
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        
+        .job-card { 
+            background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 12px;
+            display: flex; flex-direction: column; gap: 10px; transition: 0.3s; position: relative;
+        }
+        .job-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        
+        .job-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+        .company-logo { width: 50px; height: 50px; border-radius: 6px; object-fit: contain; background: white; padding: 2px; }
+        
+        .meta-tag { font-size: 0.8rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px; margin-right: 10px; }
+        
+        input { width: 100%; padding: 12px; margin-bottom: 15px; background: var(--bg-body); border: 1px solid var(--border); color: white; border-radius: 6px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div id="app-header"></div>
+
+    <div class="container">
+        <h1 style="font-family: var(--font-header);">LINKEDIN DIRECT SCRAPER</h1>
+        <p style="color: var(--text-muted);">Scrape jobs directly from LinkedIn public pages (No API Key needed).</p>
+
+        <div class="split-layout">
+            
+            <!-- CONTROLS -->
+            <div class="search-panel">
+                <div style="background: rgba(0,255,0,0.1); padding: 10px; border-radius: 6px; margin-bottom: 20px; border: 1px solid var(--success);">
+                    <!-- <i class="fas fa-info-circle" style="color: var(--success);"></i>  -->
+                    <!-- <small>Constructs URL like: <br> linkedin.com/jobs/<b>company</b>-jobs-<b>location</b></small> -->
+                </div>
+
+                <label>Target Company</label>
+                <input type="text" id="ln-company" placeholder="e.g. Siemens">
+                
+                <label>Target Location</label>
+                <input type="text" id="ln-location" placeholder="e.g. Cairo">
+
+                <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="scrapeLinkedIn()">
+                    <i class="fab fa-linkedin"></i> SCRAPE JOBS
+                </button>
+            </div>
+
+            <!-- RESULTS -->
+            <div>
+                <div style="margin-bottom: 15px; display: flex; justify-content: space-between;">
+                    <span id="result-count" style="color: var(--text-muted);">Results: 0</span>
+                    <button onclick="document.getElementById('results-area').innerHTML=''" style="background:none; border:none; color: var(--danger); cursor:pointer;">Clear</button>
+                </div>
+                <div class="results-grid" id="results-area">
+                    <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-muted); border: 2px dashed var(--border); border-radius: 12px;">
+                        Ready to scrape. Enter company and city.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/layout.js"></script>
+    <script>
+        async function scrapeLinkedIn() {
+            const btn = document.querySelector('.btn-primary');
+            const resultsArea = document.getElementById('results-area');
+            const company = document.getElementById('ln-company').value;
+            const location = document.getElementById('ln-location').value;
+
+            if(!company || !location) {
+                Swal.fire('Missing Data', 'Please enter Company and Location', 'warning');
+                return;
+            }
+            
+            // Lock UI
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SCRAPING...';
+            btn.disabled = true;
+            resultsArea.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Contacting LinkedIn...</div>';
+
+            try {
+                const res = await fetch('/api/admin/linkedin-scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ query: company, location: location })
+                });
+
+                if (!res.ok) throw new Error(`Server Error: ${res.status}`);
+                const response = await res.json();
+                
+                if(response.data && response.data.length > 0) {
+                    renderResults(response.data);
+                } else {
+                    resultsArea.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 30px; border: 1px solid var(--border); border-radius: 8px;">
+                            <h3 style="color: var(--danger)">No Results Found</h3>
+                            <p>Could not find a LinkedIn page for: <b>${company}-jobs-${location}</b></p>
+                            <p style="font-size: 0.9rem;">Try checking the spelling or try a broader location.</p>
+                        </div>`;
+                }
+
+            } catch (err) {
+                console.error(err);
+                resultsArea.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 30px; border: 1px solid var(--danger); background: rgba(255,0,0,0.05); border-radius: 8px;">
+                        <h3 style="color: var(--danger)">Scraping Failed</h3>
+                        <p>${err.message}</p>
+                    </div>`;
+            } finally {
+                btn.innerHTML = '<i class="fab fa-linkedin"></i> SCRAPE JOBS';
+                btn.disabled = false;
+            }
+        }
+
+        function renderResults(jobs) {
+            const container = document.getElementById('results-area');
+            document.getElementById('result-count').innerText = `Results: ${jobs.length}`;
+            container.innerHTML = '';
+
+            jobs.forEach((job) => {
+                const logoHtml = job.logo ? `<img src="${job.logo}" class="company-logo" onerror="this.style.display='none'">` : '';
+                
+                const card = document.createElement('div');
+                card.className = 'job-card';
+                card.innerHTML = `
+                    <div class="job-header">
+                        ${logoHtml}
+                        <div>
+                            <h3 style="margin: 0; font-family: var(--font-header); font-size: 1.1rem; line-height: 1.3;">${job.title}</h3>
+                            <div style="font-size: 0.9rem; color: var(--accent); margin-top: 4px;">${job.company}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 10px 0;">
+                        <span class="meta-tag"><i class="fas fa-map-marker-alt"></i> ${job.location}</span>
+                        <span class="meta-tag"><i class="far fa-clock"></i> ${job.date}</span>
+                    </div>
+
+                    <a href="${job.link}" target="_blank" style="margin-top: auto; display: block; text-align:center; padding: 10px; background: var(--bg-body); border: 1px solid var(--accent); color: var(--accent); text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.9rem; transition: 0.3s;">
+                        APPLY ON LINKEDIN <i class="fas fa-external-link-alt"></i>
+                    </a>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>

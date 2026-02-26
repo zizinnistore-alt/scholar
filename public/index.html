@@ -3,49 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCHOLAR NEXUS</title>
+    <title>NEXUS | Academic & Industry Bridge</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/global.css">
+    
+    <style>
+        /* Custom UI Enhancements for the Main Page */
+        :root {
+            --academic-glow: rgba(168, 85, 247, 0.15);
+            --industry-glow: rgba(16, 185, 129, 0.15);
+            --academic-accent: #a855f7;
+            --industry-accent: #10b981;
+        }
+
+        .hero-section {
+            text-align: center;
+            padding: 80px 20px 60px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-title {
+            font-family: var(--font-header, 'Rajdhani', sans-serif);
+            font-size: 4.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, var(--academic-accent), var(--industry-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .split-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px 80px;
+        }
+
+        /* Pillar Styling */
+        .pillar {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .pillar.academic {
+            box-shadow: 0 10px 40px var(--academic-glow);
+        }
+        .pillar.academic:hover {
+            border-color: var(--academic-accent);
+            transform: translateY(-5px);
+        }
+
+        .pillar.industry {
+            box-shadow: 0 10px 40px var(--industry-glow);
+        }
+        .pillar.industry:hover {
+            border-color: var(--industry-accent);
+            transform: translateY(-5px);
+        }
+
+        .pillar-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-family: var(--font-header, 'Rajdhani', sans-serif);
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .academic .pillar-header { color: var(--academic-accent); }
+        .industry .pillar-header { color: var(--industry-accent); }
+
+        .pillar-desc {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+
+        /* Feature Cards Inside Pillars */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .feature-card:hover {
+            background: var(--bg-main);
+        }
+
+        .academic .feature-card:hover { border-color: var(--academic-accent); }
+        .industry .feature-card:hover { border-color: var(--industry-accent); }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .academic .feature-icon { color: var(--academic-accent); }
+        .industry .feature-icon { color: var(--industry-accent); }
+
+        .feature-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .feature-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .split-layout { grid-template-columns: 1fr; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .hero-title { font-size: 3rem; }
+        }
+    </style>
 </head>
 <body>
+    <!-- Header injected via layout.js -->
     <div id="app-header"></div>
 
-    <div class="container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 60vh;">
-        <h1 style="font-family: var(--font-header); font-size: 4rem; margin-bottom: 20px;">SCHOLAR NEXUS</h1>
-        <p style="font-size: 1.2rem; color: var(--text-muted); max-width: 600px; margin-bottom: 50px;">
-            The unified platform for academic research, global networking, and career opportunities.
-        </p>
-        
-        <div style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center;">
-            <a href="/jobs" class="card-box" style="width: 250px; text-decoration: none; color: inherit; transition: 0.3s;">
-                <i class="fas fa-briefcase" style="font-size: 2.5rem; color: var(--accent); margin-bottom: 15px;"></i>
-                <h3>Jobs Portal</h3>
-                <small style="color: var(--text-muted);">Local DB & Map Filter</small>
-            </a>
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <h1 class="hero-title">NEXUS</h1>
+            <p class="hero-subtitle">
+                The ultimate unified platform bridging the gap between rigorous academic research and dynamic industrial opportunities. Discover networks, projects, and careers all in one place.
+            </p>
+        </section>
 
-            <a href="/scanner" class="card-box" style="width: 250px; text-decoration: none; color: inherit; transition: 0.3s;">
-                <i class="fas fa-user-astronaut" style="font-size: 2.5rem; color: #a855f7; margin-bottom: 15px;"></i>
-                <h3>Researcher Scanner</h3>
-                <small style="color: var(--text-muted);">External API Analysis</small>
-            </a>
+        <!-- Main Split Layout -->
+        <section class="split-layout">
+            
+            <!-- ACADEMIC PILLAR -->
+            <div class="pillar academic">
+                <div class="pillar-header">
+                    <i class="fas fa-microscope"></i> Academic Ecosystem
+                </div>
+                <p class="pillar-desc">
+                    Connect with Arab researchers, explore international journals, and utilize AI to align your graduation project with the perfect supervisors and reference papers.
+                </p>
+                
+                <div class="feature-grid">
+                    <a href="/grad-dashboard" class="feature-card">
+                        <i class="fas fa-users feature-icon"></i>
+                        <h3>Supervisor Database</h3>
+                        <p>Find specialized professors and academic supervisors from a comprehensive Arab researcher database.</p>
+                    </a>
+                    
+                    <a href="/explorer" class="feature-card">
+                        <i class="fas fa-globe feature-icon"></i>
+                        <h3>Global Journals</h3>
+                        <p>Search general research and published articles across top-tier international scientific journals.</p>
+                    </a>
 
-            <a href="/hottopics" class="card-box" style="width: 250px; text-decoration: none; color: inherit; transition: 0.3s;">
-                <i class="fas fa-fire" style="font-size: 2.5rem; color: #f43f5e; margin-bottom: 15px;"></i>
-                <h3>Hot Topics</h3>
-                <small style="color: var(--text-muted);">Breakthrough Radar</small>
-            </a>
+                    <a href="/scanner" class="feature-card">
+                        <i class="fas fa-brain feature-icon"></i>
+                        <h3>Project AI Matcher</h3>
+                        <p>Describe your project to receive intelligent suggestions for relevant researchers and supporting papers.</p>
+                    </a>
 
-            <a href="/local-search" class="card-box" style="width: 250px; text-decoration: none; color: inherit; transition: 0.3s;">
-                <i class="fas fa-database" style="font-size: 2.5rem; color: #10b981; margin-bottom: 15px;"></i>
-                <h3>Database Search</h3>
-                <small style="color: var(--text-muted);">Internal Professor Network</small>
-            </a>
+                    <a href="/grad-form.html" class="feature-card">
+                        <i class="fas fa-project-diagram feature-icon"></i>
+                        <h3>Graduation Projects</h3>
+                        <p>View registered graduation projects to inspire your own research or collaborate with peers.</p>
+                    </a>
+                </div>
+            </div>
 
-        </div>
-    </div>
+            <!-- INDUSTRY PILLAR -->
+            <div class="pillar industry">
+                <div class="pillar-header">
+                    <i class="fas fa-building"></i> Industry Network
+                </div>
+                <p class="pillar-desc">
+                    A direct gateway for graduates to explore the corporate landscape. Discover company branches, understand their fields, and find your next big career move.
+                </p>
+                
+                <div class="feature-grid">
+                    <a href="/companies.html" class="feature-card">
+                        <i class="fas fa-sitemap feature-icon"></i>
+                        <h3>Company Directory</h3>
+                        <p>Explore detailed profiles of top companies, including their branches, operational fields, and pages.</p>
+                    </a>
+                    
+                    <a href="/jobs" class="feature-card">
+                        <i class="fas fa-briefcase feature-icon"></i>
+                        <h3>Job Openings</h3>
+                        <p>Browse available vacancies and employment opportunities tailored to recent graduates and researchers.</p>
+                    </a>
 
+                    <a href="/jobs" class="feature-card"> <!-- Link to map/portal -->
+                        <i class="fas fa-map-marked-alt feature-icon"></i>
+                        <h3>Interactive Map</h3>
+                        <p>Locate company branches, nearby job openings, and industrial hubs geographically.</p>
+                    </a>
+
+                    <a href="/grad-dashboard" class="feature-card">
+                        <i class="fas fa-handshake feature-icon"></i>
+                        <h3>Talent Acquisition</h3>
+                        <p>A bridge allowing companies to connect directly with outstanding recent graduates who fit their exact requirements.</p>
+                    </a>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer injected via layout.js -->
     <div id="app-footer"></div>
+    
     <script src="/js/layout.js"></script>
 </body>
 </html>

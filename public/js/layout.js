@@ -8,44 +8,120 @@ document.addEventListener("DOMContentLoaded", () => {
     const header = document.getElementById('app-header');
     const path = window.location.pathname;
     
+    // Inject CSS for Dropdowns dynamically so it works immediately
+    const style = document.createElement('style');
+    style.textContent = `
+        .nav-item { position: relative; height: 100%; display: flex; align-items: center; }
+        .dropdown-trigger { cursor: pointer; display: flex; align-items: center; gap: 5px; height: 100%; }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: var(--bg-card);
+            min-width: 200px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            z-index: 1000;
+            flex-direction: column;
+            padding: 5px 0;
+        }
+        .nav-item:hover .dropdown-menu { display: flex; }
+        .dropdown-item {
+            padding: 10px 15px;
+            color: var(--text-main);
+            text-decoration: none;
+            transition: background 0.2s;
+            display: block;
+        }
+        .dropdown-item:hover { background-color: var(--bg-main); color: var(--accent); }
+        .dropdown-item.active { color: var(--accent); font-weight: bold; }
+    `;
+    document.head.appendChild(style);
+    
     if(header) {
-    const user = JSON.parse(localStorage.getItem('nexus_user'));
-    const authLink = user 
-        ? `<div style="display:flex; align-items:center; gap:15px;">
-             <span style="color:var(--accent); font-weight:bold;"><i class="fas fa-user-circle"></i> ${user.name}</span>
-             <button onclick="logout()" style="background:var(--bg-card); color:var(--text-main); border:1px solid var(--border); padding:5px 10px; border-radius:6px; cursor:pointer;">Logout</button>
-           </div>`
-        : `<a href="/login" class="nav-link" style="color:var(--accent); font-weight:bold;"><i class="fas fa-sign-in-alt"></i> Login</a>`;
+        const user = JSON.parse(localStorage.getItem('nexus_user'));
+        
+        // Auth Section
+        const authLink = user 
+            ? `<div style="display:flex; align-items:center; gap:15px;">
+                 <span style="color:var(--accent); font-weight:bold;"><i class="fas fa-user-circle"></i> ${user.name}</span>
+                 <button onclick="logout()" style="background:var(--bg-card); color:var(--text-main); border:1px solid var(--border); padding:5px 10px; border-radius:6px; cursor:pointer;">Logout</button>
+               </div>`
+            : `<a href="/login" class="nav-link" style="color:var(--accent); font-weight:bold;"><i class="fas fa-sign-in-alt"></i> Login</a>`;
 
-    if(header) {
+        // Define Navigation Groups
+        // Check if any sub-link is active to highlight the parent dropdown
+        const isAcademicActive = ['/scanner', '/explorer','/local-search', '/grad-form.html', '/grad-dashboard'].includes(path);
+        const isAdminActive = ['/jobs', '/companies.html'].includes(path);
+
         header.innerHTML = `
             <div class="main-header">
                 <div class="brand" onclick="window.location.href='/'">
                     <i class="fas fa-atom"></i> NEXUS
                 </div>
+                
                 <nav class="nav-links">
+                    <!-- Home -->
                     <a href="/" class="nav-link ${path === '/' ? 'active' : ''}">Home</a>
-                    <a href="/jobs" class="nav-link ${path === '/jobs' ? 'active' : ''}">Jobs & Map</a>
-                    <a href="/scanner" class="nav-link ${path === '/scanner' ? 'active' : ''}">Scanner</a>
-                    <a href="/explorer" class="nav-link ${path === '/explorer' ? 'active' : ''}">Explorer</a>
-                    <a href="/companies.html" class="nav-link ${path === '/companies.html' ? 'active' : ''}">Companies</a>
-                    <a href="/grad-form.html" class="nav-link ${path === '/grad-form.html' ? 'active' : ''}">Register Project</a>
-                    <a href="/grad-dashboard" class="nav-link">Database</a> 
+
+                    <!-- Academic Section (Research, Scanner, Projects) -->
+                    <div class="nav-item">
+                        <span class="nav-link dropdown-trigger ${isAcademicActive ? 'active' : ''}">
+                            Academic <i class="fas fa-chevron-down" style="font-size: 0.8em;"></i>
+                        </span>
+                        <div class="dropdown-menu">
+                            <a href="/scanner" class="dropdown-item ${path === '/scanner' ? 'active' : ''}">
+                                <i class="fas fa-qrcode"></i> Scanner
+                            </a>
+                            <a href="/explorer" class="dropdown-item ${path === '/explorer' ? 'active' : ''}">
+                                <i class="fas fa-search"></i> Explorer
+                            </a>
+                            <a href="/local-search" class="dropdown-item ${path === '/local-search' ? 'active' : ''}">
+                                <i class="fas fa-database"></i> Arab Researchers
+                            </a> 
+                            <a href="/grad-dashboard" class="dropdown-item ${path === '/grad-dashboard' ? 'active' : ''}">
+                                <i class="fas fa-database"></i> Database
+                            </a> 
+                            <a href="/grad-form.html" class="dropdown-item ${path === '/grad-form.html' ? 'active' : ''}">
+                                <i class="fas fa-file-signature"></i> Register Project
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Administrative Section (Work, Companies) -->
+                    <div class="nav-item">
+                        <span class="nav-link dropdown-trigger ${isAdminActive ? 'active' : ''}">
+                            Administrative <i class="fas fa-chevron-down" style="font-size: 0.8em;"></i>
+                        </span>
+                        <div class="dropdown-menu">
+                            <a href="/jobs" class="dropdown-item ${path === '/jobs' ? 'active' : ''}">
+                                <i class="fas fa-map-marked-alt"></i> Jobs & Map
+                            </a>
+                            <a href="/companies.html" class="dropdown-item ${path === '/companies.html' ? 'active' : ''}">
+                                <i class="fas fa-building"></i> Companies
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Team -->
                     <a href="/team.html" class="nav-link ${path === '/team.html' ? 'active' : ''}">Team</a>
+                    
                     ${authLink}
                 </nav>
+
                 <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); cursor:pointer; font-size:1.2rem;">
                     <i class="fas fa-adjust"></i>
                 </button>
             </div>
         `;
-    }
 
-window.logout = function() {
-    localStorage.removeItem('nexus_token');
-    localStorage.removeItem('nexus_user');
-    window.location.reload();
-}
+        window.logout = function() {
+            localStorage.removeItem('nexus_token');
+            localStorage.removeItem('nexus_user');
+            window.location.reload();
+        }
     }
 
     // 3. Inject Footer
