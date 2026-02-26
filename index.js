@@ -1170,7 +1170,174 @@ app.get('/api/grad-projects', async (req, res) => {
 });
 
 
+// 1. Serper API Proxy (Search Logic)
+// 1. Serper API Proxy (View ALL Results)
+app.post('/api/admin/external-search', isAdmin, async (req, res) => {
+    const { query, location, type } = req.body;
+    
+    console.log(`\n--- [SERPER DEBUG] START ---`);
+    console.log(`1. Incoming Request: Query=${query}, Location=${location}`);
 
+    // البحث داخل لينكدإن
+    const searchString = `site:linkedin.com/jobs ${query} ${location}`;
+    console.log(`2. Google Query: [${searchString}]`);
+
+    const apiKey = process.env.SERPER_API_KEY || 'd15508687b958ed69e249d7ec03f37de4fd89837';
+    
+    if (!apiKey) {
+        return res.status(500).json({ error: "Server Configuration Error: Missing Serper API Key" });
+    }
+
+    const config = {
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: 'https://google.serper.dev/search',
+        headers: { 
+            'X-API-KEY': apiKey, 
+            'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({
+            "q": searchString,
+            "gl": "eg",       
+            "num": 20         
+        })
+    };
+
+    try {
+        const response = await axios.request(config);
+        const organic = response.data.organic || [];
+        
+        console.log(`3. Total Results Found: ${organic.length}`);
+
+        if (organic.length === 0) {
+            return res.json({ success: true, data: [] });
+        }
+
+        const mappedJobs = organic.map(item => {
+            let rawTitle = item.title || "Unknown Result";
+            let cleanTitle = rawTitle;
+            let company = query; 
+            
+            cleanTitle = cleanTitle.replace(/ \| LinkedIn/gi, '').replace(/ - LinkedIn/gi, '').trim();
+
+            if (rawTitle.includes(' hiring ')) {
+                const parts = rawTitle.split(' hiring ');
+                company = parts[0].trim();
+                let rolePart = parts[1];
+                if (rolePart.includes(' in ')) {
+                    rolePart = rolePart.split(' in ')[0];
+                }
+                cleanTitle = rolePart.trim();
+            } 
+            
+            return {
+                title: cleanTitle,
+                company: company, 
+                country: location,
+                link: item.link,
+                snippet: item.snippet || "No description available.",
+                source: 'LinkedIn'
+            };
+        });
+
+        console.log(`4. Successfully mapped ALL ${mappedJobs.length} jobs.`);
+        console.log(`--- [SERPER DEBUG] END ---\n`);
+        
+        res.json({ success: true, data: mappedJobs });
+
+    } catch (error) {
+        console.error("--- [SERPER DEBUG] ERROR ---");
+        res.status(500).json({ error: "Search Service Failed" });
+    }
+});
+// 2. Import Job Route (Slightly different from regular add)
+app.post('/api/admin/import-job', isAdmin, (req, res) => {
+    const { title, company, country, description, apply_link, track, seniority } = req.body;
+    const owner_id = req.user.id; // Admin ID
+
+    // Auto-fill missing fields for imported jobs
+    const country_code = country.substring(0, 2).toUpperCase(); // Rough guess, admin can edit later
+    const salary = "Not Disclosed";
+    const type = "Full-time";
+    const requirements = "See external link for details.";
+
+    const sql = `INSERT INTO jobs 
+    (owner_id, title, company, country, country_code, track, type, seniority, description, requirements, salary, apply_link) 
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`;
+    
+    db.run(sql, [owner_id, title, company, country, country_code, track, type, seniority, description, requirements, salary, apply_link], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, jobId: this.lastID });
+    });
+});
+
+app.get('/linkedin-scraper', (req, res) => res.sendFile(path.join(__dirname, 'public', 'linkedin-scraper.html')));
+
+
+const cheerio = require('cheerio'); 
+
+// API: Direct LinkedIn Scraper
+app.post('/api/admin/linkedin-scrape', isAdmin, async (req, res) => {
+    const { query, location } = req.body;
+
+   
+    const cleanQuery = query.trim().toLowerCase().replace(/\s+/g, '-');
+    const cleanLocation = location.trim().toLowerCase().replace(/\s+/g, '-');
+    
+    const targetUrl = `https://www.linkedin.com/jobs/${cleanQuery}-jobs-${cleanLocation}?position=1&pageNum=0`;
+
+    console.log(`[LinkedIn Scraper] Target URL: ${targetUrl}`);
+
+    try {
+        const response = await axios.get(targetUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9',
+            }
+        });
+
+        const html = response.data;
+        const $ = cheerio.load(html); 
+        const jobs = [];
+
+        // 3. استخراج البيانات بناءً على كود HTML اللي انت بعته
+        // الكلاس الأساسي لكل كارت هو "base-search-card"
+        $('.base-search-card').each((index, element) => {
+            const title = $(element).find('.base-search-card__title').text().trim();
+            const company = $(element).find('.base-search-card__subtitle a').text().trim() || query;
+            const jobLocation = $(element).find('.job-search-card__location').text().trim();
+            const link = $(element).find('a.base-card__full-link').attr('href');
+            
+            const dateElement = $(element).find('time');
+            const postedDate = dateElement.attr('datetime') || dateElement.text().trim();
+
+            const imgElement = $(element).find('.artdeco-entity-image');
+            const logo = imgElement.attr('data-delayed-url') || imgElement.attr('src');
+
+            if (title && link) {
+                jobs.push({
+                    title: title,
+                    company: company,
+                    location: jobLocation,
+                    link: link.split('?')[0], 
+                    date: postedDate,
+                    logo: logo,
+                    source: 'LinkedIn Direct'
+                });
+            }
+        });
+
+        console.log(`[LinkedIn Scraper] Found ${jobs.length} jobs.`);
+        res.json({ success: true, data: jobs });
+
+    } catch (error) {
+        console.error("[LinkedIn Scraper] Error:", error.message);
+        if (error.response && error.response.status === 404) {
+             return res.json({ success: true, data: [], message: "No jobs page found for this combination." });
+        }
+        res.status(500).json({ error: "Failed to scrape LinkedIn. They might be blocking the request." });
+    }
+});
 
 
 
@@ -1234,3 +1401,4 @@ app.listen(port, '0.0.0.0', () => {
 
 
 module.exports = app;
+
