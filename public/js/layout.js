@@ -63,53 +63,37 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 
                 <nav class="nav-links">
-                    <!-- Home -->
-                    <a href="/" class="nav-link ${path === '/' ? 'active' : ''}">Home</a>
+    <a href="/" class="nav-link ${path === '/' ? 'active' : ''}">Home</a>
 
-                    <!-- Academic Section (Research, Scanner, Projects) -->
-                    <div class="nav-item">
-                        <span class="nav-link dropdown-trigger ${isAcademicActive ? 'active' : ''}">
-                            Academic <i class="fas fa-chevron-down" style="font-size: 0.8em;"></i>
-                        </span>
-                        <div class="dropdown-menu">
-                            <a href="/scanner" class="dropdown-item ${path === '/scanner' ? 'active' : ''}">
-                                <i class="fas fa-qrcode"></i> Scanner
-                            </a>
-                            <a href="/explorer" class="dropdown-item ${path === '/explorer' ? 'active' : ''}">
-                                <i class="fas fa-search"></i> Explorer
-                            </a>
-                            <a href="/local-search" class="dropdown-item ${path === '/local-search' ? 'active' : ''}">
-                                <i class="fas fa-database"></i> Arab Researchers
-                            </a> 
-                            <a href="/grad-dashboard" class="dropdown-item ${path === '/grad-dashboard' ? 'active' : ''}">
-                                <i class="fas fa-database"></i> Database
-                            </a> 
-                            <a href="/grad-form.html" class="dropdown-item ${path === '/grad-form.html' ? 'active' : ''}">
-                                <i class="fas fa-file-signature"></i> Register Project
-                            </a>
-                        </div>
-                    </div>
+    <!-- ACADEMIC / RESEARCH DROPDOWN -->
+    <div class="nav-item">
+        <span class="nav-link dropdown-trigger ${['/scanner','/explorer','/local-search'].some(x=>path.includes(x)) ? 'active' : ''}">
+            Research <i class="fas fa-chevron-down" style="font-size: 0.8em;"></i>
+        </span>
+        <div class="dropdown-menu">
+            <a href="/scanner" class="dropdown-item"><i class="fas fa-user-astronaut"></i> Target Scanner</a>
+            <a href="/explorer" class="dropdown-item"><i class="fas fa-search"></i> Paper Explorer</a>
+            <a href="/local-search" class="dropdown-item"><i class="fas fa-map-marker-alt"></i> Local Researchers</a> 
+            <a href="/grad-dashboard" class="dropdown-item"><i class="fas fa-database"></i> Database Stats</a> 
+            <a href="/grad-form.html" class="dropdown-item"><i class="fas fa-file-signature"></i> Register Project</a>
+        </div>
+    </div>
 
-                    <!-- Administrative Section (Work, Companies) -->
-                    <div class="nav-item">
-                        <span class="nav-link dropdown-trigger ${isAdminActive ? 'active' : ''}">
-                            Administrative <i class="fas fa-chevron-down" style="font-size: 0.8em;"></i>
-                        </span>
-                        <div class="dropdown-menu">
-                            <a href="/jobs" class="dropdown-item ${path === '/jobs' ? 'active' : ''}">
-                                <i class="fas fa-map-marked-alt"></i> Jobs & Map
-                            </a>
-                            <a href="/companies.html" class="dropdown-item ${path === '/companies.html' ? 'active' : ''}">
-                                <i class="fas fa-building"></i> Companies
-                            </a>
-                        </div>
-                    </div>
+    <!-- NEW JOBS DROPDOWN -->
+    <div class="nav-item">
+        <span class="nav-link dropdown-trigger ${['/jobs','/companies.html'].some(x=>path.includes(x)) ? 'active' : ''}">
+            Jobs & Market <i class="fas fa-chevron-down" style="font-size: 0.8em;"></i>
+        </span>
+        <div class="dropdown-menu">
+            <a href="/jobs" class="dropdown-item"><i class="fab fa-linkedin"></i> Job Search & Map</a>
+            <a href="/companies.html" class="dropdown-item"><i class="fas fa-building"></i> Companies List</a>
+        </div>
+    </div>
 
-                    <!-- Team -->
-                    <a href="/team.html" class="nav-link ${path === '/team.html' ? 'active' : ''}">Team</a>
-                    
-                    ${authLink}
-                </nav>
+    <a href="/team.html" class="nav-link ${path === '/team.html' ? 'active' : ''}">Team</a>
+    
+    ${authLink}
+</nav>
 
                 <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); cursor:pointer; font-size:1.2rem;">
                     <i class="fas fa-adjust"></i>
@@ -131,11 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="main-footer">
                 <div class="footer-links">
                     <a href="/about">About</a>
-                    <a href="/api-docs">API Documentation</a>
                     <a href="/privacy">Privacy Policy</a>
                     <a href="/contact">Contact</a>
                 </div>
-                <div style="font-size:0.8rem; opacity:0.6;">&copy; 2026 Scholar Nexus. Our Team.</div>
+                <div style="font-size:0.8rem; opacity:0.6;">&copy; 2026 Nexus. Our Team.</div>
             </div>
         `;
     }

@@ -9,6 +9,13 @@
     <link rel="stylesheet" href="/css/global.css"> <!-- Your existing CSS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+
+                [data-theme="light"] {
+    --bg-body: #f8fafc; --bg-card: #ffffff; --border: #cbd5e1; 
+    --text-main: #0f172a; --text-muted: #64748b; --accent: #2563eb;
+            --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
+}
+
         .split-layout { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-top: 30px; }
         .search-panel { background: var(--bg-card); padding: 25px; border-radius: 12px; border: 1px solid var(--border); height: fit-content; }
         .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }

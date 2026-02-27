@@ -13,7 +13,8 @@
             --text-main: #f1f5f9; --text-muted: #94a3b8; --accent: #3b82f6;
             --font-main: 'Inter', sans-serif; --font-header: 'Rajdhani', sans-serif;
         }
-        :root {
+        /* FIX: Changed :root to [data-theme="light"] */
+        [data-theme="light"] {
             --bg-body: #f8fafc; --bg-card: #ffffff; --border: #cbd5e1; 
             --text-main: #0f172a; --text-muted: #64748b; --accent: #2563eb;
         }
@@ -59,7 +60,6 @@
                     <select id="f-role">
                         <option value="user">Researcher / User</option>
                         <option value="company">Company / Institution</option>
-                        <!-- Admin is hidden from public reg -->
                     </select>
                 </div>
 
@@ -99,51 +99,47 @@
             document.getElementById('error-msg').style.display = 'none';
         }
 
- async function handleAuth(e) {
-    e.preventDefault();
-    const email = document.getElementById('f-email').value;
-    const password = document.getElementById('f-password').value;
-    const name = document.getElementById('f-name').value;
-    const role = document.getElementById('f-role').value;
-    
-    const url = isLogin ? '/api/auth/login' : '/api/auth/register';
-    const payload = isLogin ? { email, password } : { name, email, password, role };
+        async function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('f-email').value;
+            const password = document.getElementById('f-password').value;
+            const name = document.getElementById('f-name').value;
+            const role = document.getElementById('f-role').value;
+            
+            const url = isLogin ? '/api/auth/login' : '/api/auth/register';
+            const payload = isLogin ? { email, password } : { name, email, password, role };
 
+            const errEl = document.getElementById('error-msg');
+            errEl.style.display = 'none';
 
-    const errEl = document.getElementById('error-msg');
-    errEl.style.display = 'none';
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
 
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-
-        if(res.ok) {
-            if(isLogin) {
-                
-                localStorage.setItem('nexus_token', data.token);
-                localStorage.setItem('nexus_user', JSON.stringify(data.user));
-                window.location.href = '/'; 
-            } else {
-                
-                alert(data.message); 
-                toggleMode(); 
+                if(res.ok) {
+                    if(isLogin) {
+                        localStorage.setItem('nexus_token', data.token);
+                        localStorage.setItem('nexus_user', JSON.stringify(data.user));
+                        window.location.href = '/'; 
+                    } else {
+                        alert(data.message); 
+                        toggleMode(); 
+                    }
+                } else {
+                    errEl.innerText = data.error || "An error occurred";
+                    errEl.style.display = 'block';
+                }
+            } catch(e) {
+                console.error(e);
+                const errEl = document.getElementById('error-msg');
+                errEl.innerText = "Connection Error";
+                errEl.style.display = 'block';
             }
-        } else {
-            errEl.innerText = data.error || "An error occurred";
-            errEl.style.display = 'block';
         }
-    } catch(e) {
-        console.error(e);
-        const errEl = document.getElementById('error-msg');
-        errEl.innerText = "Connection Error";
-        errEl.style.display = 'block';
-    }
-}
-    
     </script>
 </body>
 </html>
