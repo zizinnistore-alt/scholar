@@ -867,6 +867,7 @@ app.post('/api/admin/approve-user', async (req, res) => {
 // ================================================================
 
 // API: Upload Companies
+// 1. Upload Companies (Revised with Glassdoor & Link Mining)
 app.post('/api/admin/upload-companies', isAdmin, uploadTemp.single('file'), async (req, res) => {
     if (!req.file || !req.file.buffer) return res.status(400).json({error: "No file uploaded"});
     
@@ -878,75 +879,47 @@ app.post('/api/admin/upload-companies', isAdmin, uploadTemp.single('file'), asyn
 
         workbook.SheetNames.forEach(sheetName => {
             const sheet = workbook.Sheets[sheetName];
-            
-            // 1. Convert to JSON for data
             const rows = xlsx.utils.sheet_to_json(sheet);
-            
-            // 2. MINE HYPERLINKS (The Fix)
-            // We verify which row each link belongs to
-            const rowLinks = {}; // Map: RowIndex -> { website: '', linkedin: '' }
-            
-            // Parse the range (e.g., A1:Z100)
             const range = xlsx.utils.decode_range(sheet['!ref']);
             
-            // Loop through every cell to find hidden links
+            // Link Mining (Hidden Hyperlinks)
+            const rowLinks = {}; 
             for (let R = range.s.r; R <= range.e.r; ++R) {
                 for (let C = range.s.c; C <= range.e.c; ++C) {
                     const cellRef = xlsx.utils.encode_cell({c: C, r: R});
                     const cell = sheet[cellRef];
-                    
-                    // Check if cell has a Hyperlink (.l)
                     if (cell && cell.l && cell.l.Target) {
                         const url = cell.l.Target;
-                        const rowIndex = R - 1; // Adjust for header row (approximate)
-
-                        if (!rowLinks[rowIndex]) rowLinks[rowIndex] = { website: '', linkedin: '' };
+                        const rowIndex = R - 1; 
+                        if (!rowLinks[rowIndex]) rowLinks[rowIndex] = {};
                         
-                        if (url.includes('linkedin.com')) {
-                            rowLinks[rowIndex].linkedin = url;
-                        } else if (url.startsWith('http') || url.startsWith('www')) {
-                            // Avoid setting website if we already found one in this row
-                            if (!rowLinks[rowIndex].website) rowLinks[rowIndex].website = url;
-                        }
+                        if (url.includes('linkedin.com')) rowLinks[rowIndex].linkedin = url;
+                        else if (url.includes('glassdoor.com')) rowLinks[rowIndex].glassdoor = url;
+                        else if (url.startsWith('http')) rowLinks[rowIndex].website = url;
                     }
                 }
             }
 
             const region = sheetName.trim(); 
 
-            // 3. Process Rows
             rows.forEach((row, index) => {
                 const name = extractData(row, 'name');
                 if (!name) return;
-
                 const nameKey = name.toLowerCase().trim();
                 
-                // DATA EXTRACTION
-                const category = extractData(row, 'category') || 'General';
-                const industry = extractData(row, 'industry');
-                const size = extractData(row, 'size') || 'N/A';
-                const presence = extractData(row, 'presence');
-                
-                // LINK STRATEGY: 
-                // Priority 1: Hidden Excel Hyperlink (mined above)
-                // Priority 2: Visible Text in the cell (extracted via helper)
                 let mined = rowLinks[index] || {};
-                
                 let website = mined.website || extractData(row, 'website');
                 let linkedin = mined.linkedin || extractData(row, 'linkedin');
+                let glassdoor = mined.glassdoor || extractData(row, 'glassdoor');
 
-                // Fallback: Scan text in row if no link found yet
-                if (!website && !linkedin) {
+                // Fallback text scan for glassdoor
+                if (!glassdoor) {
                     Object.values(row).forEach(val => {
-                        const sVal = String(val).toLowerCase();
-                        if (sVal.includes('http') || sVal.includes('www.')) {
-                            if (sVal.includes('linkedin')) linkedin = String(val);
-                            else website = String(val);
-                        }
+                        if (String(val).includes('glassdoor.com')) glassdoor = String(val);
                     });
                 }
 
-                // LOCATION PARSING
+                // Location Logic
                 let rawLocation = extractData(row, 'location') || 'Unknown';
                 let country = rawLocation;
                 let state = null;
@@ -956,86 +929,79 @@ app.post('/api/admin/upload-companies', isAdmin, uploadTemp.single('file'), asyn
                     const parts = rawLocation.split('(');
                     country = parts[0].trim();
                     const sub = parts[1].replace(')', '').trim();
-                    
                     if (region.toUpperCase().includes('USA') || region.toUpperCase().includes('AMERICA')) {
-                        country = "United States";
-                        state = parts[0].trim();
-                        city = sub;
-                    } else {
-                        city = sub;
-                    }
+                        country = "United States"; state = parts[0].trim(); city = sub;
+                    } else { city = sub; }
                 } else if (region.toUpperCase().includes('USA')) {
-                    country = "United States";
-                    state = rawLocation;
+                    country = "United States"; state = rawLocation;
                 }
 
-                // GROUPING
                 if (!companiesMap[nameKey]) {
                     companiesMap[nameKey] = {
                         name: name.trim(),
-                        category: category,
-                        industry: industry,
-                        size: size,
+                        category: extractData(row, 'category') || 'General',
+                        industry: extractData(row, 'industry'),
+                        size: extractData(row, 'size') || 'N/A',
                         website: website,
                         linkedin: linkedin,
+                        glassdoor: glassdoor, // Added Glassdoor
                         hq_country: country,
                         branches: []
                     };
                 }
 
                 const entry = companiesMap[nameKey];
-
-                // Update info if better data found
                 if (website && (!entry.website || entry.website.length < 5)) entry.website = website;
                 if (linkedin && (!entry.linkedin || entry.linkedin.length < 5)) entry.linkedin = linkedin;
-                if (size && size !== 'N/A' && entry.size === 'N/A') entry.size = size;
+                if (glassdoor && !entry.glassdoor) entry.glassdoor = glassdoor;
 
-                // Add Branch
                 const isDup = entry.branches.some(b => b.country === country && b.state === state);
-                if (!isDup) {
-                    entry.branches.push({ region, country, state, city, presence });
-                }
+                if (!isDup) entry.branches.push({ region, country, state, city, presence: extractData(row, 'presence') });
             });
         });
 
-        // Database Save Process (Supabase)
         if (clearDb) {
             await supabase.from('companies').delete().neq('id', 0);
         }
 
         const companiesToInsert = Object.values(companiesMap).map(c => ({
-            name: c.name, 
-            category: c.category, 
-            industry: c.industry, 
-            size: c.size, 
-            website: c.website, 
-            linkedin: c.linkedin, 
-            branches: JSON.stringify(c.branches), 
-            hq_country: c.hq_country
+            name: c.name, category: c.category, industry: c.industry, size: c.size,
+            website: c.website, linkedin: c.linkedin, glassdoor: c.glassdoor, 
+            branches: JSON.stringify(c.branches), hq_country: c.hq_country
         }));
 
-        if (companiesToInsert.length > 0) {
-            await supabase.from('companies').insert(companiesToInsert);
+        // Batch Insert to prevent timeouts
+        const batchSize = 100;
+        for (let i = 0; i < companiesToInsert.length; i += batchSize) {
+            const batch = companiesToInsert.slice(i, i + batchSize);
+            const { error } = await supabase.from('companies').insert(batch);
+            if (error) console.error("Batch insert error:", error);
         }
 
         res.json({ success: true, message: `Processed ${companiesToInsert.length} companies.` });
-
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Upload failed: " + err.message });
     }
 });
 
-// 2. Search Companies (Matches ANY branch)
+// 2. Search Companies (Matches ANY branch + Size + Category)
 app.get('/api/companies', async (req, res) => {
-    const { q, country, category } = req.query; 
+    const { q, country, category, size } = req.query; 
 
     let query = supabase.from('companies').select('*');
 
+    // Category Multi-select
     if (category && category !== 'All') {
-        query = query.eq('category', category);
+        const cats = category.split(',');
+        query = query.in('category', cats);
     }
     
+    // Size Filter (Added)
+    if (size && size !== 'All') {
+        query = query.eq('size', size);
+    }
+
     if (q) {
         query = query.or(`name.ilike.%${q}%,industry.ilike.%${q}%`);
     }
@@ -1044,11 +1010,8 @@ app.get('/api/companies', async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     let finalRows = rows;
-
     if (country && country !== 'All') {
         const list = country.split(',');
-        // This Logic checks if the country string exists ANYWHERE in the JSON branches
-        // Effectively treating a branch in Egypt as equal to a company HQ'd in Egypt
         finalRows = rows.filter(r => {
             const bStr = r.branches || '';
             return list.some(c => bStr.includes(c));
@@ -1057,7 +1020,6 @@ app.get('/api/companies', async (req, res) => {
 
     const enhanced = finalRows.map(r => ({
         ...r,
-        // Fallback logo generator
         logo: `https://logo.clearbit.com/${r.name.replace(/[\s,.]+/g, '').toLowerCase()}.com`,
         branches: JSON.parse(r.branches || '[]')
     }));
@@ -1065,28 +1027,28 @@ app.get('/api/companies', async (req, res) => {
     res.json(enhanced);
 });
 
-// 3. Get Filters (Extracts unique countries from JSON)
+// 3. Get Filters (Added Size)
 app.get('/api/companies/filters', async (req, res) => {
-    const { data: rows, error } = await supabase.from('companies').select('branches, category');
-    
+    const { data: rows, error } = await supabase.from('companies').select('branches, category, size');
     if (error) return res.status(500).json({ error: error.message });
 
     const countries = new Set();
     const categories = new Set();
+    const sizes = new Set();
     
     rows.forEach(r => {
         if(r.category) categories.add(r.category);
+        if(r.size && r.size !== 'N/A') sizes.add(r.size);
         try {
             const b = JSON.parse(r.branches);
-            b.forEach(branch => {
-                if(branch.country) countries.add(branch.country);
-            });
+            b.forEach(branch => { if(branch.country) countries.add(branch.country); });
         } catch(e) {}
     });
 
     res.json({
         countries: Array.from(countries).sort(),
-        categories: Array.from(categories).sort()
+        categories: Array.from(categories).sort(),
+        sizes: Array.from(sizes).sort()
     });
 });
 
@@ -1342,21 +1304,17 @@ app.post('/api/admin/linkedin-scrape', isAdmin, async (req, res) => {
 // ================================================================
 //  SECTION 7: FEEDBACK API
 // ================================================================
-app.post('/api/feedback', (req, res) => {
+app.post('/api/feedback', async (req, res) => {
     const { name, email, category, message } = req.body;
-    
-    if (!name || !email || !message) {
-        return res.status(400).json({ error: "Missing fields" });
-    }
+    if (!name || !email || !message) return res.status(400).json({ error: "Missing fields" });
 
-    const sql = "INSERT INTO feedback (name, email, category, message) VALUES (?,?,?,?)";
-    db.run(sql, [name, email, category, message], function(err) {
-        if (err) {
-            console.error("Feedback DB Error:", err.message);
-            return res.status(500).json({ error: "Database error: " + err.message });
-        }
-        res.json({ success: true, message: "Feedback received." });
-    });
+    const { error } = await supabase.from('feedback').insert([{ name, email, category, message }]);
+    
+    if (error) {
+        console.error("Feedback DB Error:", error.message);
+        return res.status(500).json({ error: "Database error" });
+    }
+    res.json({ success: true, message: "Feedback received." });
 });
 
 
@@ -1369,6 +1327,7 @@ function extractData(row, type) {
         name: ['companyname', 'company', 'name', 'entity'],
         website: ['website', 'web', 'url', 'companylink', 'link', 'site', 'homepage'],
         linkedin: ['linkedin', 'profile'],
+        glassdoor: ['glassdoor', 'review'],
         size: ['size', 'employee', 'staff', 'number'],
         category: ['category', 'cat', 'sector'],
         industry: ['industry', 'focus', 'vlsi', 'specialization'],
@@ -1420,5 +1379,6 @@ app.listen(port, '0.0.0.0', () => {
 
 
 module.exports = app;
+
 
 
