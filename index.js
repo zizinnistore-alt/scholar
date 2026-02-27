@@ -1186,7 +1186,7 @@ app.get('/api/grad-projects', async (req, res) => {
 
 // 1. Serper API Proxy (Search Logic)
 // 1. Serper API Proxy (View ALL Results)
-app.post('/api/admin/external-search', isAdmin, async (req, res) => {
+app.post('/api/admin/external-search', async (req, res) => {
     const { query, location, type } = req.body;
     
     console.log(`\n--- [SERPER DEBUG] START ---`);
@@ -1291,7 +1291,7 @@ app.get('/linkedin-scraper', (req, res) => res.sendFile(path.join(__dirname, 'pu
 const cheerio = require('cheerio'); 
 
 // API: Direct LinkedIn Scraper
-app.post('/api/admin/linkedin-scrape', isAdmin, async (req, res) => {
+app.post('/api/admin/linkedin-scrape', async (req, res) => {
     const { query, location } = req.body;
 
    
@@ -1431,6 +1431,7 @@ app.listen(port, '0.0.0.0', () => {
 
 
 module.exports = app;
+
 
 
 
