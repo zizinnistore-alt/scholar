@@ -1339,6 +1339,25 @@ app.post('/api/admin/linkedin-scrape', isAdmin, async (req, res) => {
     }
 });
 
+// ================================================================
+//  SECTION 7: FEEDBACK API
+// ================================================================
+app.post('/api/feedback', (req, res) => {
+    const { name, email, category, message } = req.body;
+    
+    if (!name || !email || !message) {
+        return res.status(400).json({ error: "Missing fields" });
+    }
+
+    const sql = "INSERT INTO feedback (name, email, category, message) VALUES (?,?,?,?)";
+    db.run(sql, [name, email, category, message], function(err) {
+        if (err) {
+            console.error("Feedback DB Error:", err.message);
+            return res.status(500).json({ error: "Database error: " + err.message });
+        }
+        res.json({ success: true, message: "Feedback received." });
+    });
+});
 
 
 // ================================================================
@@ -1401,4 +1420,5 @@ app.listen(port, '0.0.0.0', () => {
 
 
 module.exports = app;
+
 
