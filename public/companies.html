@@ -7,10 +7,11 @@
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Map Libraries -->
+    <!-- Libraries: Leaflet (Map), SweetAlert, Chart.js (Analytics) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Global CSS -->
     <link rel="stylesheet" href="/css/global.css">
 
@@ -18,82 +19,78 @@
         /* --- PAGE SPECIFIC STYLES --- */
         body { background-color: var(--bg-body); }
         
-        /* Header Area */
-        .page-header {
-            display: flex; justify-content: space-between; align-items: flex-end;
-            margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px;
-        }
+        /* Header */
+        .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
         .page-title { font-family: var(--font-header); font-size: 2.5rem; margin: 0; color: var(--text-main); }
         .page-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
 
-        /* Controls */
+        /* Controls Grid (Updated for extra filter) */
         .controls-grid {
-            display: grid; grid-template-columns: 200px 1fr 200px auto; gap: 15px; margin-bottom: 30px;
+            display: grid; grid-template-columns: 180px 1fr 200px 150px auto; gap: 15px; margin-bottom: 15px;
         }
+        @media (max-width: 1000px) { .controls-grid { grid-template-columns: 1fr 1fr; } }
         
-        .control-btn {
-            background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);
-            padding: 0 15px; height: 50px; border-radius: 8px; cursor: pointer; display: flex;
-            align-items: center; justify-content: center; gap: 8px; font-weight: 600; transition: 0.3s;
-        }
-        .control-btn:hover { border-color: var(--accent); color: var(--accent); }
-        .control-btn.active { background: rgba(59, 130, 246, 0.1); border-color: var(--accent); color: var(--accent); }
-
-        .search-input {
+        .control-btn, .search-input, select {
             background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main);
-            height: 50px; padding: 0 15px; border-radius: 8px; width: 100%; outline: none;
+            height: 50px; padding: 0 15px; border-radius: 8px; outline: none; box-sizing: border-box;
+            width: 100%; transition: 0.3s;
         }
-        .search-input:focus { border-color: var(--accent); }
+        .control-btn { cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; color: var(--text-muted); }
+        .control-btn:hover, .control-btn.active { border-color: var(--accent); color: var(--accent); }
+        .control-btn.active { background: rgba(59, 130, 246, 0.1); }
+        .search-input:focus, select:focus { border-color: var(--accent); }
 
-        select {
-            background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main);
-            height: 50px; padding: 0 15px; border-radius: 8px; cursor: pointer; outline: none;
+        /* Multi-select Tags */
+        .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; min-height: 30px; }
+        .filter-tag {
+            background: rgba(37, 99, 235, 0.1); color: var(--accent); 
+            border: 1px solid rgba(37, 99, 235, 0.2); padding: 5px 10px; 
+            border-radius: 4px; font-size: 0.8rem; font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
         }
+        .filter-tag i { cursor: pointer; opacity: 0.6; }
+        .filter-tag i:hover { opacity: 1; color: var(--danger); }
 
-        /* Company Grid */
-        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-
+        /* Company Cards */
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         .company-card {
             background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
             padding: 20px; transition: 0.3s; cursor: pointer; display: flex; flex-direction: column;
             position: relative; overflow: hidden; height: 100%;
         }
-        .company-card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .company-card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
 
         .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .logo-placeholder {
-            width: 50px; height: 50px; background: #fff; border-radius: 8px; padding: 5px;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .logo-placeholder img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        
+        .logo-box { width: 50px; height: 50px; background: #fff; border-radius: 8px; padding: 5px; display: flex; align-items: center; justify-content: center; }
+        .logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .cat-tag { font-size: 0.7rem; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); padding: 3px 8px; border-radius: 4px; height: fit-content; }
-
+        
         .co-name { font-family: var(--font-header); font-size: 1.4rem; margin: 0 0 5px 0; color: var(--text-main); }
-        .co-industry { font-size: 0.85rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 15px; flex-grow: 1; }
-
-        .co-footer {
-            border-top: 1px solid var(--border); padding-top: 12px; margin-top: auto;
-            font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 5px;
-        }
+        .co-industry { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1;}
+        .co-footer { border-top: 1px solid var(--border); padding-top: 12px; margin-top: auto; font-size: 0.8rem; color: var(--text-muted); }
         .branch-badge { background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
 
-        /* Modal Styles */
-        .modal-content { background: var(--bg-card); border: 1px solid var(--border); width: 700px; max-width: 95vw; height: 85vh; border-radius: 16px; display: flex; flex-direction: column; }
-        .modal-header { padding: 25px; border-bottom: 1px solid var(--border); display: flex; gap: 20px; align-items: center; }
+        /* Detail Modal */
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border); width: 800px; max-width: 95vw; height: 90vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;}
+        .modal-header { padding: 25px; border-bottom: 1px solid var(--border); display: flex; gap: 20px; align-items: center; background: var(--bg-body); }
         .modal-body { padding: 25px; overflow-y: auto; flex: 1; }
-        .modal-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        .modal-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: var(--bg-body); }
 
-        .link-btn {
-            flex: 1; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: 0.2s;
-        }
+        .link-btn { flex: 1; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: 0.2s; border:none; cursor: pointer; display:flex; align-items:center; justify-content:center; gap:8px;}
         .link-web { background: var(--accent); color: white; }
-        .link-web:hover { background: var(--accent-hover); }
         .link-li { background: #0077b5; color: white; }
-        .link-li:hover { filter: brightness(1.1); }
+        .link-gd { background: #0caa41; color: white; }
         .link-disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; opacity: 0.5; }
+        
+        /* Job List in Modal */
+        .job-item { background: var(--bg-body); padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+        .job-title { font-weight: 600; color: var(--text-main); font-size: 0.95rem; }
+        .job-meta { font-size: 0.8rem; color: var(--text-muted); }
+        
+        /* Timeline */
+        .chart-wrap { height: 200px; width: 100%; margin-bottom: 20px; }
 
-        /* Admin Box */
+        /* Admin */
         .admin-box { grid-column: 1 / -1; background: rgba(16, 185, 129, 0.05); border: 1px dashed var(--success); padding: 15px; border-radius: 8px; display: none; align-items: center; justify-content: space-between; margin-bottom: 20px; }
     </style>
 </head>
@@ -103,7 +100,6 @@
 
     <div class="container">
         
-        <!-- Header -->
         <div class="page-header">
             <div>
                 <h1 class="page-title">GLOBAL COMPANIES</h1>
@@ -111,7 +107,7 @@
             </div>
             <div style="text-align: right;">
                 <span id="result-count" style="font-size: 1.5rem; font-weight: bold; color: var(--accent);">0</span>
-                <span style="color: var(--text-muted);"> Companies Found</span>
+                <span style="color: var(--text-muted);"> Companies</span>
             </div>
         </div>
 
@@ -119,7 +115,7 @@
         <div id="admin-panel" class="admin-box">
             <div>
                 <strong style="color: var(--success);"><i class="fas fa-database"></i> Database Update</strong>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">Upload Excel with sheets (USA, Europe, etc). Columns: Company, Website, LinkedIn.</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Upload Excel. Columns: Company, Website, LinkedIn, Glassdoor, Size.</div>
             </div>
             <div style="display:flex; gap:10px;">
                 <input type="file" id="excel-file" accept=".xlsx, .xls" style="font-size: 0.8rem; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border); padding: 5px;">
@@ -130,19 +126,28 @@
         <!-- Controls -->
         <div class="controls-grid">
             <button class="control-btn" id="map-trigger" onclick="openMapModal()">
-                <i class="fas fa-globe-americas"></i> <span id="map-label">Location (All)</span>
+                <i class="fas fa-globe-americas"></i> <span id="map-label">Location</span>
             </button>
             
-            <input type="text" id="q-search" class="search-input" placeholder="Search by Name, Industry, or Tech Stack..." onkeyup="fetchCompanies()">
+            <input type="text" id="q-search" class="search-input" placeholder="Search name or industry..." onkeyup="debounceFetch()">
             
-            <select id="f-category" onchange="fetchCompanies()">
-                <option value="All">All Categories</option>
+            <!-- Multi-Select Category -->
+            <select id="sel-category" onchange="addCategory(this.value)">
+                <option value="">+ Add Category</option>
+            </select>
+
+            <!-- Size Filter -->
+            <select id="sel-size" onchange="fetchCompanies()">
+                <option value="All">Any Size</option>
             </select>
 
             <button onclick="fetchCompanies()" style="height: 50px; width: 50px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); cursor: pointer;">
                 <i class="fas fa-sync-alt"></i>
             </button>
         </div>
+
+        <!-- Active Tags -->
+        <div class="tag-row" id="tag-container"></div>
 
         <!-- Grid -->
         <div class="grid-layout" id="grid"></div>
@@ -151,10 +156,10 @@
     <!-- DETAIL MODAL -->
     <div class="modal-overlay" id="detail-modal">
         <div class="modal-content">
-            <div style="display:flex; justify-content: flex-end; padding: 10px;">
+            <div style="display:flex; justify-content: flex-end; padding: 10px; background:var(--bg-card);">
                 <button onclick="document.getElementById('detail-modal').style.display='none'" style="background:none; border:none; color:var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
-            <div id="modal-content-inject" style="display: flex; flex-direction: column; height: 100%;">
+            <div id="modal-inject" style="display: flex; flex-direction: column; height: 100%;">
                 <!-- Injected via JS -->
             </div>
         </div>
@@ -163,9 +168,9 @@
     <!-- MAP MODAL -->
     <div class="modal-overlay" id="map-modal">
         <div class="modal-content" style="width: 80vw; height: 80vh;">
-            <div style="padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
-                <h3>Filter by Presence</h3>
-                <button onclick="closeMapModal()" style="background: var(--accent); color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">Done</button>
+            <div style="padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin:0;">Filter by Presence</h3>
+                <button onclick="closeMapModal()" style="background: var(--accent); color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer;">Apply Filter</button>
             </div>
             <div id="map-container" style="flex:1;"></div>
         </div>
@@ -175,9 +180,12 @@
     <script src="/js/layout.js"></script>
 
     <script>
+        // State
         let selectedCountries = [];
+        let selectedCategories = [];
         let map;
         let geoLayer;
+        let chartInstance = null;
 
         async function init() {
             // Admin Check
@@ -187,21 +195,63 @@
             // Load Filters
             const res = await fetch('/api/companies/filters');
             const data = await res.json();
+            
+            // Populate Category Select
+            const catSel = document.getElementById('sel-category');
             data.categories.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c; opt.innerText = c;
-                document.getElementById('f-category').appendChild(opt);
+                catSel.appendChild(opt);
+            });
+
+            // Populate Size Select
+            const sizeSel = document.getElementById('sel-size');
+            data.sizes.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s; opt.innerText = s;
+                sizeSel.appendChild(opt);
             });
 
             fetchCompanies();
         }
 
+        // --- FILTER LOGIC ---
+        function addCategory(val) {
+            if(!val || selectedCategories.includes(val)) return;
+            selectedCategories.push(val);
+            renderTags();
+            document.getElementById('sel-category').value = "";
+            fetchCompanies();
+        }
+
+        function removeCategory(val) {
+            selectedCategories = selectedCategories.filter(c => c !== val);
+            renderTags();
+            fetchCompanies();
+        }
+
+        function renderTags() {
+            const container = document.getElementById('tag-container');
+            container.innerHTML = selectedCategories.map(c => `
+                <div class="filter-tag">
+                    ${c} <i class="fas fa-times" onclick="removeCategory('${c}')"></i>
+                </div>
+            `).join('');
+        }
+
+        let debounceTimer;
+        function debounceFetch() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(fetchCompanies, 300);
+        }
+
         async function fetchCompanies() {
             const q = document.getElementById('q-search').value;
-            const cat = document.getElementById('f-category').value;
+            const size = document.getElementById('sel-size').value;
             const country = selectedCountries.join(',');
+            const category = selectedCategories.join(',');
 
-            const res = await fetch(`/api/companies?q=${q}&category=${cat}&country=${country}`);
+            const res = await fetch(`/api/companies?q=${q}&category=${category}&size=${size}&country=${country}`);
             const data = await res.json();
             
             document.getElementById('result-count').innerText = data.length;
@@ -213,26 +263,21 @@
             grid.innerHTML = '';
 
             if(data.length === 0) {
-                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding: 50px; color: var(--text-muted);">No matches found.</div>';
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding: 50px; color: var(--text-muted);">No companies match your filters.</div>';
                 return;
             }
 
             data.forEach(c => {
-                // Determine Branches Summary
+                // Formatting
                 const uniqueCountries = [...new Set(c.branches.map(b => b.country))];
-                const displayCountry = uniqueCountries.includes('United States') ? 'United States' : uniqueCountries[0];
-                const count = uniqueCountries.length;
-                
-                // Check if user filtered by a specific country, if so, does this company have a branch there?
-                // We highlight local presence.
-                const localPresence = c.branches.find(b => selectedCountries.includes(b.country)) || c.branches.find(b => b.country === 'Egypt'); // Default local highlight
+                const localPresence = c.branches.find(b => selectedCountries.includes(b.country)) || c.branches.find(b => b.country === 'Egypt'); 
                 
                 const card = document.createElement('div');
                 card.className = 'company-card';
                 card.onclick = () => openDetail(c);
                 card.innerHTML = `
                     <div class="card-header">
-                        <div class="logo-placeholder">
+                        <div class="logo-box">
                             <img src="${c.logo}" onerror="this.src='https://ui-avatars.com/api/?name=${c.name}&background=random'">
                         </div>
                         <div style="text-align:right;">
@@ -241,98 +286,133 @@
                         </div>
                     </div>
                     <h3 class="co-name">${c.name}</h3>
-                    <div class="co-industry">${c.industry}</div>
+                    <div class="co-industry">${c.industry || 'Tech Company'}</div>
                     
                     <div class="co-footer">
-                        <div><i class="fas fa-globe"></i> HQ: ${c.hq_country}</div>
+                        <div><i class="fas fa-map-marker-alt"></i> HQ: ${c.hq_country}</div>
                         <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;">
                             ${uniqueCountries.slice(0, 3).map(ct => `<span class="branch-badge">${ct}</span>`).join('')}
                             ${uniqueCountries.length > 3 ? `<span class="branch-badge">+${uniqueCountries.length - 3}</span>` : ''}
                         </div>
-                        ${localPresence ? `<div style="color:var(--success); margin-top:5px; font-weight:600;"><i class="fas fa-check-circle"></i> ${localPresence.presence || 'Local Presence'}</div>` : ''}
+                        ${localPresence ? `<div style="color:var(--success); margin-top:5px; font-weight:600; font-size:0.75rem;"><i class="fas fa-check-circle"></i> ${localPresence.presence || 'Available in Region'}</div>` : ''}
                     </div>
                 `;
                 grid.appendChild(card);
             });
         }
 
-        function openDetail(c) {
-    // 1. Group branches by Region
-    const grouped = {};
-    c.branches.forEach(b => {
-        const reg = b.region || 'International';
-        if(!grouped[reg]) grouped[reg] = [];
-        grouped[reg].push(b);
-    });
+        // --- DETAIL MODAL & ANALYTICS ---
+        async function openDetail(c) {
+            const modal = document.getElementById('modal-inject');
+            
+            // 1. Fetch Analytics
+            let jobs = [], timeline = [];
+            try {
+                const res = await fetch(`/api/companies/analytics?name=${encodeURIComponent(c.name)}`);
+                const analytics = await res.json();
+                jobs = analytics.jobs;
+                timeline = analytics.timeline;
+            } catch(e) { console.error(e); }
 
+            // 2. Prepare Links
+            const web = c.website ? (c.website.startsWith('http') ? c.website : 'https://'+c.website) : null;
+            const li = c.linkedin ? (c.linkedin.startsWith('http') ? c.linkedin : 'https://'+c.linkedin) : null;
+            const gd = c.glassdoor ? (c.glassdoor.startsWith('http') ? c.glassdoor : 'https://'+c.glassdoor) : null;
 
-            // 2. Build Branches HTML
-    let branchesHtml = '';
-    for(const [region, locs] of Object.entries(grouped)) {
-        branchesHtml += `<div style="margin-bottom:15px;">
-            <div style="color:var(--accent); font-size:0.8rem; font-weight:bold; margin-bottom:5px; text-transform:uppercase;">${region}</div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                ${locs.map(l => `
-                    <div style="background:var(--bg-body); padding:10px; border-radius:6px; border:1px solid var(--border);">
-                        <div style="font-weight:600; font-size:0.9rem;">
-                            ${l.state ? `<span style="color:var(--text-main)">${l.state}, </span>` : ''}${l.country}
-                            ${l.city ? `<span style="color:var(--text-muted); font-size:0.8rem;">(${l.city})</span>` : ''}
+            // 3. Render Content
+            modal.innerHTML = `
+                <div class="modal-header">
+                    <img src="${c.logo}" onerror="this.src='https://ui-avatars.com/api/?name=${c.name}&background=random'" style="width:70px; height:70px; border-radius:10px; background:#fff; object-fit:contain; padding:5px;">
+                    <div>
+                        <h2 style="margin:0; font-family:var(--font-header); font-size:2rem;">${c.name}</h2>
+                        <div style="color:var(--text-muted);">${c.category} &bull; ${c.size || 'Size N/A'}</div>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    
+                    <!-- Analytics Section -->
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
+                        <div>
+                            <h4 style="font-family: var(--font-header); margin-top:0;">Hiring Timeline (Opened Positions)</h4>
+                            <div class="chart-wrap">
+                                <canvas id="chart-timeline"></canvas>
+                            </div>
                         </div>
-                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:3px;">
-                            ${l.presence || 'Presence details not listed'}
+                        <div>
+                            <h4 style="font-family: var(--font-header); margin-top:0;">Latest Positions</h4>
+                            <div style="max-height:200px; overflow-y:auto;">
+                                ${jobs.length > 0 ? jobs.map(j => `
+                                    <div class="job-item">
+                                        <div>
+                                            <div class="job-title">${j.title}</div>
+                                            <div class="job-meta">${j.posted_at || 'Recently'} &bull; ${j.type || 'Full-time'}</div>
+                                        </div>
+                                        ${j.apply_link ? `<a href="${j.apply_link}" target="_blank" style="color:var(--accent);"><i class="fas fa-external-link-alt"></i></a>` : ''}
+                                    </div>
+                                `).join('') : '<div style="color:var(--text-muted); font-style:italic;">No active positions tracked recently.</div>'}
+                            </div>
                         </div>
                     </div>
-                `).join('')}
-            </div>
-        </div>`;
-    }
 
-    // 3. Build Buttons & Handle Protocols
-    const hasWeb = c.website && c.website.length > 3;
-    const hasLi = c.linkedin && c.linkedin.length > 3;
+                    <!-- Company Info -->
+                    <div style="background: rgba(59, 130, 246, 0.05); padding: 15px; border-radius: 8px; border-left: 3px solid var(--accent); margin-bottom:20px;">
+                        <strong style="color:var(--text-main); display:block; margin-bottom:5px;">About</strong>
+                        <p style="color:var(--text-muted); margin:0;">${c.industry || 'No industry description available.'}</p>
+                    </div>
+                    
+                    <!-- Locations -->
+                    <h4 style="font-family: var(--font-header); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Global Presence</h4>
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
+                        ${c.branches.map(b => `
+                            <div style="background:var(--bg-body); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-size:0.85rem;">
+                                <strong>${b.country}</strong> ${b.city ? `(${b.city})` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
 
-    let webLink = c.website || '';
-    if(hasWeb && !webLink.match(/^https?:\/\//i)) webLink = 'https://' + webLink;
+                </div>
+                <div class="modal-footer">
+                    ${web ? `<a href="${web}" target="_blank" class="link-btn link-web"><i class="fas fa-globe"></i> Website</a>` : ''}
+                    ${li ? `<a href="${li}" target="_blank" class="link-btn link-li"><i class="fab fa-linkedin"></i> LinkedIn</a>` : ''}
+                    ${gd ? `<a href="${gd}" target="_blank" class="link-btn link-gd"><i class="fas fa-star-half-alt"></i> Glassdoor</a>` : ''}
+                </div>
+            `;
 
-
-    let liLink = c.linkedin || '';
-    if(hasLi && !liLink.match(/^https?:\/\//i)) liLink = 'https://' + liLink;
-
-    const modal = document.getElementById('modal-content-inject');
-    modal.innerHTML = `
-        <div class="modal-header">
-            <img src="${c.logo}" onerror="this.src='https://ui-avatars.com/api/?name=${c.name}&background=random'" style="width:70px; height:70px; border-radius:10px; background:#fff; object-fit:contain; padding:5px;">
-            <div>
-                <h2 style="margin:0; font-family:var(--font-header); font-size:2rem;">${c.name}</h2>
-                <div style="color:var(--text-muted);">${c.category} &bull; ${c.size || 'Size N/A'}</div>
-            </div>
-        </div>
-        <div class="modal-body">
-            <div style="margin-bottom:20px; background: rgba(59, 130, 246, 0.05); padding: 15px; border-radius: 8px; border-left: 3px solid var(--accent);">
-                <strong style="color:var(--text-main); display:block; margin-bottom:5px;">Industry Focus</strong>
-                <p style="color:var(--text-muted); margin:0; line-height: 1.5;">${c.industry || 'No industry details available.'}</p>
-            </div>
-            
-            <h4 style="font-family: var(--font-header); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">
-                <i class="fas fa-map-marked-alt"></i> Global Locations
-            </h4>
-            ${branchesHtml}
-        </div>
-        <div class="modal-footer">
-            ${hasWeb 
-                ? `<a href="${webLink}" target="_blank" class="link-btn link-web"><i class="fas fa-globe"></i> Visit Website</a>`
-                : `<button disabled class="link-btn link-disabled">No Website</button>`
+            // 4. Render Chart
+            if(chartInstance) chartInstance.destroy();
+            if(timeline.length > 0) {
+                const ctx = document.getElementById('chart-timeline').getContext('2d');
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: timeline.map(t => t.month),
+                        datasets: [{
+                            label: 'Jobs Posted',
+                            data: timeline.map(t => t.count),
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { 
+                            y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8', stepSize: 1 } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+            } else {
+                document.getElementById('chart-timeline').parentNode.innerHTML = '<div style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">No timeline data.</div>';
             }
-            ${hasLi 
-                ? `<a href="${liLink}" target="_blank" class="link-btn link-li"><i class="fab fa-linkedin"></i> LinkedIn Profile</a>`
-                : `<button disabled class="link-btn link-disabled">No LinkedIn</button>`
-            }
-        </div>
-    `;
-    document.getElementById('detail-modal').style.display = 'flex';
-}
 
-        /* --- MAP LOGIC --- */
+            document.getElementById('detail-modal').style.display = 'flex';
+        }
+
+        // --- MAP FUNCTIONS ---
         function openMapModal() {
             document.getElementById('map-modal').style.display = 'flex';
             if(!map) {
@@ -344,30 +424,25 @@
                     geoLayer = L.geoJSON(data, {
                         style: { color: '#333', weight: 1, fillColor: '#2a2a2a', fillOpacity: 0.7 },
                         onEachFeature: (feature, layer) => {
-                            const name = feature.properties.name;
-                            // Basic mapping for known discrepancies
-                            const mapName = name === "United States of America" ? "United States" : name;
-
+                            const name = feature.properties.name === "United States of America" ? "United States" : feature.properties.name;
                             layer.on('click', () => {
-                                if(selectedCountries.includes(mapName)) {
-                                    selectedCountries = selectedCountries.filter(c => c !== mapName);
+                                if(selectedCountries.includes(name)) {
+                                    selectedCountries = selectedCountries.filter(c => c !== name);
                                     geoLayer.resetStyle(layer);
                                 } else {
-                                    selectedCountries.push(mapName);
+                                    selectedCountries.push(name);
                                     layer.setStyle({ fillColor: '#3b82f6', fillOpacity: 0.9 });
                                 }
                             });
                         }
                     }).addTo(map);
                 });
-            } else {
-                setTimeout(() => map.invalidateSize(), 200);
-            }
+            } else { setTimeout(() => map.invalidateSize(), 200); }
         }
 
         function closeMapModal() {
             document.getElementById('map-modal').style.display = 'none';
-            document.getElementById('map-label').innerText = selectedCountries.length ? `Selected (${selectedCountries.length})` : 'Location (All)';
+            document.getElementById('map-label').innerText = selectedCountries.length ? `Selected (${selectedCountries.length})` : 'Location';
             document.getElementById('map-trigger').classList.toggle('active', selectedCountries.length > 0);
             fetchCompanies();
         }
@@ -376,15 +451,14 @@
         async function uploadCompanies() {
             const file = document.getElementById('excel-file').files[0];
             if(!file) return Swal.fire('Error', 'Select a file', 'error');
-            
             const fd = new FormData();
             fd.append('file', file);
-            fd.append('clear_db', 'true'); // Reset DB on upload
+            fd.append('clear_db', 'true');
 
             try {
                 const res = await fetch('/api/admin/upload-companies', { method:'POST', body:fd });
                 const d = await res.json();
-                if(d.success) { Swal.fire('Success', d.message, 'success'); fetchCompanies(); }
+                if(d.success) { Swal.fire('Success', d.message, 'success'); setTimeout(() => location.reload(), 1500); }
                 else Swal.fire('Error', d.error, 'error');
             } catch(e) { Swal.fire('Error', 'Upload failed', 'error'); }
         }

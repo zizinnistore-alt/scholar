@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FEEDBACK // NEXUS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/global.css">
+</head>
+<body>
+    <div id="app-header"></div>
+
+    <div class="container" style="max-width: 600px; padding: 40px 20px;">
+        <div class="card-box" style="padding: 40px;">
+            <h1 style="font-family: var(--font-header); text-align: center; margin-bottom: 10px;">User Feedback</h1>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 30px;">Help us improve the Scholar Nexus platform.</p>
+
+            <form onsubmit="submitFeedback(event)">
+                <div style="margin-bottom: 20px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:var(--text-muted);">Name</label>
+                    <input type="text" id="fb-name" required style="width:100%; padding:12px; background:var(--bg-body); border:1px solid var(--border); color:var(--text-main); border-radius:8px;">
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:var(--text-muted);">Email</label>
+                    <input type="email" id="fb-email" required style="width:100%; padding:12px; background:var(--bg-body); border:1px solid var(--border); color:var(--text-main); border-radius:8px;">
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:var(--text-muted);">Category</label>
+                    <select id="fb-cat" style="width:100%; padding:12px; background:var(--bg-body); border:1px solid var(--border); color:var(--text-main); border-radius:8px;">
+                        <option>Bug Report</option>
+                        <option>Feature Request</option>
+                        <option>Data Correction</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:var(--text-muted);">Message</label>
+                    <textarea id="fb-msg" required style="width:100%; padding:12px; background:var(--bg-body); border:1px solid var(--border); color:var(--text-main); border-radius:8px; min-height:120px; resize:vertical;"></textarea>
+                </div>
+
+                <button type="submit" class="btn-primary" style="width:100%; padding:15px; font-size:1.1rem;">SUBMIT FEEDBACK</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-footer"></div>
+    <script src="/js/layout.js"></script>
+<script>
+    async function submitFeedback(e) {
+        e.preventDefault();
+        const btn = document.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        
+        btn.disabled = true; 
+        btn.innerText = "Sending...";
+
+        const payload = {
+            name: document.getElementById('fb-name').value,
+            email: document.getElementById('fb-email').value,
+            category: document.getElementById('fb-cat').value,
+            message: document.getElementById('fb-msg').value
+        };
+
+        try {
+            const res = await fetch('/api/feedback', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await res.json();
+
+            if(res.ok && data.success) {
+                alert("Thank you! Your feedback has been sent.");
+                window.location.href = '/';
+            } else {
+                // Show the specific error from backend
+                alert("Error: " + (data.error || "Unknown error occurred"));
+                btn.disabled = false; 
+                btn.innerText = originalText;
+            }
+        } catch(err) {
+            console.error(err);
+            alert("Connection Failed: Check if server is running.");
+            btn.disabled = false; 
+            btn.innerText = originalText;
+        }
+    }
+</script>
+</body>
+</html>

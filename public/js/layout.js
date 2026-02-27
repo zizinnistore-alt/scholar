@@ -89,8 +89,9 @@ document.addEventListener("DOMContentLoaded", () => {
             <a href="/companies.html" class="dropdown-item"><i class="fas fa-building"></i> Companies List</a>
         </div>
     </div>
-
+        
     <a href="/team.html" class="nav-link ${path === '/team.html' ? 'active' : ''}">Team</a>
+    <a href="/feedback.html" class="nav-link ${path === '/feedback.html' ? 'active' : ''}">Feedback</a> <!-- NEW -->
     
     ${authLink}
 </nav>
