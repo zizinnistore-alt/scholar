@@ -1052,6 +1052,58 @@ app.get('/api/companies/filters', async (req, res) => {
     });
 });
 
+
+// 4. NEW: Company Analytics (Jobs & Timeline)
+app.get('/api/companies/analytics', async (req, res) => {
+    const { name } = req.query;
+    if (!name) return res.json({ jobs: [], timeline: [] });
+
+    // Fetch Jobs matching company name
+    const { data: jobs, error } = await supabase
+        .from('jobs')
+        .select('id, title, type, country, posted_at, apply_link')
+        .ilike('company', `%${name}%`)
+        .order('posted_at', { ascending: false })
+        .limit(20);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Calculate Timeline in JS (easier than Supabase SQL for date grouping)
+    const timelineMap = {};
+    jobs.forEach(job => {
+        const date = new Date(job.posted_at);
+        // Format YYYY-MM
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        timelineMap[key] = (timelineMap[key] || 0) + 1;
+    });
+
+    const timeline = Object.entries(timelineMap)
+        .map(([month, count]) => ({ month, count }))
+        .sort((a, b) => a.month.localeCompare(b.month));
+
+    res.json({ jobs, timeline });
+});
+
+// NEW: Import Job (Admin)
+app.post('/api/admin/import-job', isAdmin, async (req, res) => {
+    const { title, company, country, description, apply_link, track, seniority } = req.body;
+    const owner_id = req.user.id;
+    
+    // Auto-fill logic
+    const country_code = country ? country.substring(0, 2).toUpperCase() : 'XX';
+    const salary = "Not Disclosed";
+    const type = "Full-time";
+    const requirements = "See external link for details.";
+
+    const { data, error } = await supabase
+        .from('jobs')
+        .insert([{ owner_id, title, company, country, country_code, track, type, seniority, description, requirements, salary, apply_link }])
+        .select()
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, jobId: data.id });
+});
 // 1. Serve HTML Pages
 app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'public', 'team.html')));
 app.get('/grad-form', (req, res) => res.sendFile(path.join(__dirname, 'public', 'grad-form.html')));
@@ -1379,6 +1431,7 @@ app.listen(port, '0.0.0.0', () => {
 
 
 module.exports = app;
+
 
 
 
