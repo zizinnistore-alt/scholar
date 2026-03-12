@@ -353,6 +353,7 @@
 .ls-mode-toggle {
     display: flex;
     gap: 10px;
+    margin-bottom: 20px;
 }
 
 .vt-btn {
@@ -403,6 +404,7 @@
     align-items: center;
     text-align: center;
     transition: 0.3s ease;
+    max-width: 250px;
 }
 
 .ls-card:hover {
