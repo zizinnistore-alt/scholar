@@ -11,262 +11,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/global.css">
-
-    <style>
-        [data-theme="light"] {
-            --bg-body: #f8fafc;
-            --bg-card: #ffffff;
-            --border: #cbd5e1;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --accent: #2563eb;
-            --font-main: 'Inter', sans-serif;
-            --font-header: 'Rajdhani', sans-serif;
-        }
-
-        body {
-            margin: 0;
-            font-family: var(--font-main);
-            background: var(--bg-body);
-            color: var(--text-main);
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .explorer-layout {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 30px;
-            margin-top: 20px;
-            align-items: start;
-        }
-
-        @media (max-width: 900px) {
-            .explorer-layout {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Left Panel */
-        .panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            position: sticky;
-            top: 90px;
-        }
-
-        .panel-title {
-            font-family: var(--font-header);
-            font-size: 1.4rem;
-            color: var(--text-main);
-            margin: 0 0 20px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            letter-spacing: 0.5px;
-        }
-
-        input,
-        textarea {
-            width: 100%;
-            background: var(--bg-body);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 12px 15px;
-            border-radius: 8px;
-            font-family: var(--font-main);
-            font-size: 0.95rem;
-            outline: none;
-            transition: 0.3s;
-            box-sizing: border-box;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 140px;
-        }
-
-        input:focus,
-        textarea:focus {
-            border-color: var(--accent);
-        }
-
-        .btn-action {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 15px;
-            width: 100%;
-            border-radius: 8px;
-            font-family: var(--font-header);
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .btn-action:hover {
-            background: var(--accent-hover);
-            transform: translateY(-2px);
-        }
-
-        /* Results Area */
-        .main-view {
-            min-height: 60vh;
-        }
-
-        .results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        /* Paper Card Design */
-        .paper-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .paper-card:hover {
-            border-color: var(--accent);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .paper-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--text-main);
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-
-        .paper-title a {
-            text-decoration: none;
-            color: inherit;
-            transition: 0.2s;
-        }
-
-        .paper-title a:hover {
-            color: var(--accent);
-        }
-
-        .paper-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 15px;
-        }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .meta-item i {
-            color: var(--accent);
-        }
-
-        .paper-abstract {
-            font-size: 0.95rem;
-            color: #cbd5e1;
-            line-height: 1.6;
-            margin-bottom: 15px;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .paper-authors {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 15px;
-            font-style: italic;
-        }
-
-        .paper-actions {
-            display: flex;
-            gap: 10px;
-            border-top: 1px solid var(--border);
-            padding-top: 15px;
-        }
-
-        .btn-sm {
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            text-decoration: none;
-            transition: 0.2s;
-        }
-
-        .btn-sm:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .btn-sm.primary {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--accent);
-            border-color: rgba(59, 130, 246, 0.2);
-        }
-
-        .btn-sm.primary:hover {
-            background: var(--accent);
-            color: white;
-        }
-
-        .badge-oa {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-    </style>
+    <link rel="stylesheet" href="/css/pages/explorer.css">
 </head>
 
 <body>
@@ -301,128 +46,35 @@
                     SEARCH PAPERS <i class="fas fa-search"></i>
                 </button>
 
-                <div style="margin-top: 10px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
+                <div style="text-align: center; font-size: 0.8rem; color: var(--text-muted);">
                     Powered by <strong style="color:var(--text-main)">Semantic Scholar</strong>
                 </div>
             </div>
 
             <!-- RESULTS -->
             <div class="main-view" id="main-view">
-                <div
-                    style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 50px 20px;">
+                <div class="searchResults" id="searchResult">
                     <div
-                        style="background: var(--bg-card); width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border: 1px solid var(--border);">
-                        <i class="fas fa-layer-group" style="font-size: 3rem; color: var(--accent); opacity: 0.8;"></i>
+                        style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 2rem;">
+                        <div
+                            style="background: var(--bg-card); width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border: 1px solid var(--border);">
+                            <i class="fas fa-layer-group" style="font-size: 3rem; color: var(--accent); opacity: 0.8;"></i>
+                        </div>
+                        <h2>Start Your Discovery</h2>
+                        <p>Enter a topic to find papers, or use "Find Similar" on results to explore the network.</p>
                     </div>
-                    <h2>Start Your Discovery</h2>
-                    <p>Enter a topic to find papers, or use "Find Similar" on results to explore the network.</p>
                 </div>
+                <div id="pagination"></div>
             </div>
 
         </div>
     </div>
 
     <script src="/js/layout.js"></script>
-    <script>
-        async function fetchPapers(mode, specificId = null) {
-            const query = document.getElementById('q-input').value;
-            const paperIdInput = document.getElementById('q-id').value;
-            const year = document.getElementById('f-year').value;
-            const view = document.getElementById('main-view');
-
-            // Determine effective ID and Mode
-            let effectiveId = specificId || paperIdInput;
-            let effectiveMode = mode;
-
-            // If user clicked Search but filled in ID, switch to recommendation mode
-            if (mode === 'search' && effectiveId && !query) {
-                effectiveMode = 'recommend';
-            }
-
-            if (effectiveMode === 'search' && !query) {
-                alert("Please enter a search query."); return;
-            }
-
-            // Loading State
-            view.innerHTML = `
-                <div style="text-align:center; padding: 100px 20px;">
-                    <i class="fas fa-circle-notch fa-spin" style="font-size:3rem; color:var(--accent); margin-bottom:20px;"></i>
-                    <h3>Retrieving Papers...</h3>
-                    <p style="color: var(--text-muted);">Fetching data from Semantic Scholar API</p>
-                </div>
-            `;
-
-            try {
-                const res = await fetch('/api/explore', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        mode: effectiveMode,
-                        query: query,
-                        paperId: effectiveId,
-                        year: year
-                    })
-                });
-
-                const data = await res.json();
-
-                if (!data.papers || data.papers.length === 0) {
-                    view.innerHTML = `<div style="text-align:center; padding:50px;"><h3>No papers found.</h3></div>`;
-                    return;
-                }
-
-                // Render Header
-                let html = `
-                    <div class="results-header">
-                        <span>Found <strong>${data.total || data.papers.length}</strong> Results for "${effectiveMode === 'recommend' ? 'Similar to ' + effectiveId : query}"</span>
-                    </div>
-                `;
-
-                // Render Cards
-                data.papers.forEach(p => {
-                    const authors = p.authors ? p.authors.map(a => a.name).join(', ') : 'Unknown Authors';
-                    const venue = p.venue || 'Unknown Venue';
-                    const abstract = p.abstract || 'No abstract available for this paper.';
-                    const citations = p.citationCount || 0;
-                    const pdfLink = p.openAccessPdf ? p.openAccessPdf.url : null;
-                    const s2Link = p.url;
-
-                    html += `
-                    <div class="paper-card">
-                        <div class="paper-title">
-                            <a href="${s2Link}" target="_blank">${p.title}</a>
-                            ${pdfLink ? '<span class="badge-oa"><i class="fas fa-lock-open"></i> OA</span>' : ''}
-                        </div>
-                        
-                        <div class="paper-authors">${authors}</div>
-                        
-                        <div class="paper-meta">
-                            <div class="meta-item"><i class="far fa-calendar"></i> ${p.year || 'N/A'}</div>
-                            <div class="meta-item"><i class="fas fa-university"></i> ${venue}</div>
-                            <div class="meta-item"><i class="fas fa-quote-right"></i> ${citations} Citations</div>
-                        </div>
-
-                        <div class="paper-abstract">${abstract}</div>
-
-                        <div class="paper-actions">
-                            ${pdfLink ? `<a href="${pdfLink}" target="_blank" class="btn-sm"><i class="fas fa-file-pdf"></i> PDF</a>` : ''}
-                            <a href="${s2Link}" target="_blank" class="btn-sm"><i class="fas fa-external-link-alt"></i> View on S2</a>
-                            <button onclick="fetchPapers('recommend', '${p.paperId}')" class="btn-sm primary">
-                                <i class="fas fa-project-diagram"></i> Find Similar
-                            </button>
-                        </div>
-                    </div>
-                    `;
-                });
-
-                view.innerHTML = html;
-
-            } catch (e) {
-                console.error(e);
-                view.innerHTML = `<div style="text-align:center; color:#ef4444; padding:50px;"><h3>Error connecting to API.</h3></div>`;
-            }
-        }
-    </script>
+    <script src="/js/Pagination.js"></script>
+    <script src="/js/search-handler.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="/js/pages/explorer.js"></script>
 </body>
 
 </html>

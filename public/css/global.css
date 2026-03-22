@@ -260,3 +260,38 @@ textarea {
     transition: all 0.5s ease;
     font-family: 'Cairo', sans-serif;
 }
+
+.pagination {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-family: sans-serif;
+}
+
+.pagination button {
+    min-width: 36px;
+    height: 36px;
+    border: 1px solid #d0d0d0;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.pagination button:hover {
+    background: #f2f2f2;
+}
+
+.pagination button.active {
+    background: #e9ecef;
+    font-weight: bold;
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination .ellipsis {
+    padding: 0 6px;
+}

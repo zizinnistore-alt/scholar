@@ -562,18 +562,19 @@ app.post('/api/analyze', async (req, res) => {
 //  SECTION 3: TOPIC EXPLORER API
 // ================================================================
 
-app.post('/api/explore', async (req, res) => {
-    const { mode, query, paperId, year } = req.body;
+app.get('/api/explore', async (req, res) => {
+    const { paperId, mode, year } = req.query;
     
     const FIELDS = 'paperId,title,abstract,venue,year,authors,citationCount,openAccessPdf,url,externalIds';
     
     try {
         let apiUrl = '';
-        let params = { fields: FIELDS, limit: 20 };
+        const defaults = { fields: FIELDS, offset: 0, limit: 10, sort: "asc" };
+        const params = { ...defaults, ...req.query }
 
         if (mode === 'recommend' && paperId) {
             let targetId = paperId;
-            if (/^\d+$/.test(String(targetId))) {
+            if (/^\d+$/.test(String(paperId))) {
                 targetId = `CorpusId:${targetId}`;
             }
 
@@ -581,12 +582,11 @@ app.post('/api/explore', async (req, res) => {
             apiUrl = `https://api.semanticscholar.org/graph/v1/paper/${targetId}/recommendations`;
         } else {
             apiUrl = `https://api.semanticscholar.org/graph/v1/paper/search`;
-            params.query = query;
             if (year) params.year = `${year}-`; 
         }
 
         const response = await axios.get(apiUrl, {
-            params: params,
+            params,
             headers: { 'x-api-key': process.env.S2_API_KEY || '' }
         });
 
@@ -599,7 +599,7 @@ app.post('/api/explore', async (req, res) => {
     } catch (e) {
         console.error(`[S2 API Error] Mode: ${mode} | ID: ${paperId} | Msg: ${e.message}`);
         
-        if(e.response && e.response.status === 404) {
+        if(e.response?.status === 404) {
             return res.json({ success: true, papers: [], total: 0, message: "No recommendations found for this specific paper." });
         }
         
