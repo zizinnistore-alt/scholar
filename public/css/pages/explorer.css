@@ -59,7 +59,7 @@ body {
 	background: var(--bg-card);
 	border: 1px solid var(--border);
 	border-radius: 16px;
-	padding: 1.5rem;
+	padding: 1rem;
 	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 	display: flex;
 	flex-direction: column;
