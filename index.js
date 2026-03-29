@@ -441,12 +441,15 @@ app.post('/api/apply', upload.single('cv'), async (req, res) => {
  * Wraps Semantic Scholar API
  */
 app.get('/api/search', async (req, res) => {
-    if (!req.query.q) return res.status(400).json({ error: "Query required" });
+    const { query, description, page, limit } = req.query;
+    if (!query && !description) 
+        return res.status(400).json({ error: "Query or Description required" });
     try {
         const response = await axios.get(`https://api.semanticscholar.org/graph/v1/author/search`, {
             params: { 
-                query: req.query.q, 
-                limit: 15, 
+                query, 
+                limit: limit || 15,
+                offset: limit * page - limit || 0,
                 fields: 'authorId,name,hIndex,paperCount,citationCount,papers.fieldsOfStudy' 
             },
             headers: { 'x-api-key': process.env.S2_API_KEY || '' }
@@ -457,10 +460,17 @@ app.get('/api/search', async (req, res) => {
             primaryField: extractTopField(author.papers)
         }));
 
-        res.json(processed);
+        res.json({ 
+            success: true,
+            total: response.data.total || response.data.data?.length || 0,
+            authors: processed || [] 
+        });
     } catch (e) {
         console.error("S2 Search Error:", e.message);
-        res.status(500).json({ error: "Search Service Unavailable" });
+        res.status(500).json({ 
+            success: false,
+            error: "Search Service Unavailable"
+        });
     }
 });
 
