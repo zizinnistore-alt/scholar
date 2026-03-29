@@ -20,17 +20,12 @@ document.addEventListener("DOMContentLoaded", () => {
 /**
  * Pagination change event
  */
-globalThis.addEventListener("paginationChanged", (e) => {
-	fetchPapers("search");
-});
+globalThis.addEventListener("paginationChanged", (e) => fetchPapers("search"));
 
 /**
  * Back button support: re-perform search when URL changes
  */
-globalThis.addEventListener("popstate", () => {
-	// populateFormFromURL();
-	fetchPapers("search");
-});
+globalThis.addEventListener("popstate", () => fetchPapers("search"));
 
 async function fetchPapers(mode, specificId = null) {
 	const year = document.getElementById("f-year").value.trim();
@@ -92,7 +87,6 @@ async function fetchPapers(mode, specificId = null) {
 		});
 
 		const data = res.data;
-		console.log(data);
 
 		if (!data.papers || data.papers.length === 0) {
 			view.innerHTML = `<div style="text-align:center; padding: 3rem;"><h3>No papers found.</h3></div>`;
