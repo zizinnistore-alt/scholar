@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { authConfig } from "../config/index.js";
 import type { Response, NextFunction } from "express";
-import type { AuthRequest } from "../utils/AuthRequest.js";
+import type { AuthRequest } from "../types/AuthRequest.js";
 
 // Middleware to extract user from token (Reuse your isAdmin logic or make a generic one)
 const isAuthenticated = (

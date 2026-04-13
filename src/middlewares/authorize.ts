@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { authConfig } from "../config/index.js";
 import type { NextFunction, Response } from "express";
-import type { AuthRequest } from "../utils/AuthRequest.js";
+import type { AuthRequest } from "../types/AuthRequest.js";
 
 const isAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
 	const token = req.cookies.auth_token; // tokens from cookies
