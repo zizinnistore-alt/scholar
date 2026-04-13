@@ -38,6 +38,7 @@ import xlsx from 'xlsx';
 import { createClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
 import logger from "./middlewares/logger.js";
+import authRoutes from "./modules/auth/auth.routes.js";
 
 // --- APP CONFIGURATION ---
 const app = express();
@@ -853,64 +854,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-
-// 2. LOGIN API
-app.post('/api/auth/login', async (req, res) => {
-    const { email, password } = req.body;
-    
-    try {
-        // 1. Get User
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (error || !user) return res.status(400).json({ error: "Invalid credentials" });
-        
-        // 2. Check Password
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) return res.status(400).json({ error: "Invalid credentials" });
-
-        // 3. Check Approval
-        if (user.is_approved === 0) {
-            return res.status(403).json({ error: "Your account is pending Admin approval." });
-        }
-
-        // 4. Fetch Profile Data (for the avatar or extra info)
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('university, gender, linkedin_url')
-            .eq('user_id', user.id)
-            .maybeSingle(); // Use maybeSingle to avoid error if profile is missing for old users
-
-        // 5. Generate Token
-        const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '24h' });
-
-        res.cookie('auth_token', token, {
-            httpOnly: true,
-            secure: false, 
-            maxAge: 24 * 60 * 60 * 1000
-        });
-
-        res.json({ 
-            success: true, 
-            token: token,
-            user: { 
-                id: user.id, 
-                name: user.name, 
-                role: user.role,
-                university: profile?.university || '',
-                linkedin: profile?.linkedin_url || ''
-            } 
-        });
-
-    } catch (e) {
-        console.error("Login Error:", e);
-        res.status(500).json({ error: "Server Error" });
-    }
-});
-
+app.use("/api/auth", authRoutes);
 
 app.get('/api/auth/logout', (req, res) => {
     res.clearCookie('auth_token');
