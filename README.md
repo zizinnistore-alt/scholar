@@ -90,6 +90,24 @@ From `package.json`, the main dependencies currently are:
          └─ scanner.js
 ```
 
+## Migration / Refactoring Plan
+
+The following table tracks the progress of extracting the large `index.js` file into modular controllers, as detailed in the implementation plan:
+
+| Controller | Status | Assignee |
+| :--- | :--- | :--- |
+| `auth` | 🔄 In Progress | marwan mamdouh |
+| `profile` | ⏳ Not started yet | - |
+| `locale.researchers` | ⏳ Not started yet | - |
+| `semantic.scholar` | ⏳ Not started yet | - |
+| `jop` | ⏳ Not started yet | - |
+| `hot.topics` | ⏳ Not started yet | - |
+| `companies` | ⏳ Not started yet | - |
+| `grade.project` | ⏳ Not started yet | - |
+| `admin` | ⏳ Not started yet | - |
+| `misc / core` | ⏳ Not started yet | - |
+| `views / frontend router` | ⏳ Not started yet | - |
+
 ## Key implementation notes
 
 - `index.js` acts as the main backend, route registry, and integration layer.
