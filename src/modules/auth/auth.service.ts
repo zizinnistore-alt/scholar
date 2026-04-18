@@ -1,6 +1,6 @@
-import { comparePassword, hashPassword } from "../../utils/password.utli.js";
+import { comparePassword, hashPassword } from "../../utils/password.util.js";
 import { ConflictError, UnauthorizedError } from "../../lib/error/index.js";
-import { generateToken } from "../../utils/jwt.utli.js";
+import { generateToken } from "../../utils/jwt.util.js";
 import type { registerSchema } from "./auth.schema.js";
 import supabase from "../../lib/db.js";
 import type { z } from "zod";
