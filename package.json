@@ -13,7 +13,7 @@
 		"build": "tsc",
 		"start": "node dist/src/index.js",
 		"vercel:dev": "npm run build && vercel dev",
-		"vercel:prod-test": "npm run build && vercel dev",
+		"vercel:prod-on": "npm run build && vercel deploy --prod",
 		"vercel:deploy": "npm run build && vercel deploy"
 	},
 	"keywords": [],
