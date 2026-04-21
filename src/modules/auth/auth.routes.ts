@@ -9,7 +9,8 @@ import { authService } from "./auth.service.js";
 const attachCookie = (res: Response, token: string) => {
 	res.cookie("auth_token", token, {
 		httpOnly: true,
-		secure: false,
+		secure: true,
+		sameSite: "none",
 		maxAge: 24 * 60 * 60 * 1000, // 24 hours
 	});
 };
@@ -49,6 +50,18 @@ router.post(
 			});
 		},
 	),
+);
+
+router.post(
+	"/logout",
+	asyncHandler(async (req: Request, res: Response) => {
+		res.clearCookie("auth_token", {
+			httpOnly: true,
+			secure: true,
+			sameSite: "none",
+		});
+		return res.json({ success: true, message: "Logged out" });
+	}),
 );
 
 export default router;

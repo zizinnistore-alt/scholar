@@ -737,16 +737,7 @@ app.post('/api/jobs/add', isAuthenticated, async (req, res) => {
 //  SECTION 5: AUTHENTICATION & USERS (FINALIZED)
 // ================================================================
 
-// 1. REGISTER API
-// 
-
 app.use("/api/auth", authRoutes);
-
-app.get('/api/auth/logout', (req, res) => {
-    res.clearCookie('auth_token');
-    res.json({ success: true, message: "Logged out" });
-});
-
 
 // Add New Job (Company/Admin Only)
 // (Note: There was a duplicate definition of this route in SQLite version, mapped to the same behavior)
