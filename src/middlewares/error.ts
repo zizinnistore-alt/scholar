@@ -22,9 +22,9 @@ const externalErrorHandlers: {
 
 export const errorHandler = (
 	err: Error,
-	req: Request,
+	_: Request,
 	res: Response,
-	next: NextFunction,
+	__: NextFunction,
 ) => {
 	// our own errors — they know how to represent themselves
 	if (err instanceof BaseError) {

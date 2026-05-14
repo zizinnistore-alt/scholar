@@ -10,7 +10,7 @@
  * parseCSVRow("name,age,\"city, country\"")
  * // Returns: ["name", "age", "city, country"]
  */
-const parseCSVRow = (str: string) => {
+const parseCSVRow = (str: string): string[] => {
 	const result = [];
 	let curr = "";
 	let inQuotes = false;

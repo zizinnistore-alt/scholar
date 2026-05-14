@@ -13,4 +13,13 @@ const uploadCV = multer({
 	fileFilter: createFileFilter(["application/pdf", "application/msword"]),
 });
 
-export { uploadAvatar, uploadCV };
+const uploadExcel = multer({
+	storage: multer.memoryStorage(),
+	limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+	fileFilter: createFileFilter([
+		"application/vnd.ms-excel",
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	]),
+});
+
+export { uploadAvatar, uploadCV, uploadExcel };

@@ -12,7 +12,7 @@
  * cleanName("Professor Dr. John Smith, PhD")
  * // Returns: "John Smith"
  */
-const cleanName = (name: string) => {
+const cleanName = (name: string): string => {
 	return name
 		.replace(
 			/^(Professor\.|Professor|Prof\.|Dr\.|PhD Candidate at|PhD Candidate|Associate Professor|Assistant Professor|Ph\.D\.|MSc)\s+/gi,
@@ -38,7 +38,7 @@ const cleanName = (name: string) => {
  * extractData({ "CompanyName": "Acme Corp" }, "website")
  * // Returns: ""
  */
-const extractData = (row, type) => {
+const extractData = (row: Record<string, any>, type: string): string => {
 	const keywords = {
 		name: ["companyname", "company", "name", "entity"],
 		website: [
@@ -95,7 +95,7 @@ const extractData = (row, type) => {
  * ])
  * // Returns: "AI"
  */
-const extractTopField = (papers) => {
+const extractTopField = (papers: any[]): string => {
 	if (!papers || papers.length === 0) return "General Science";
 	const fieldCounts = {};
 	papers.forEach((p) => {
@@ -124,7 +124,10 @@ const extractTopField = (papers) => {
  * getFuzzyValue({ "LinkedInURL": "linkedin.com/...", "Email": "user@test.com" }, ["linkedin", "url"])
  * // Returns: "linkedin.com/..."
  */
-const getFuzzyValue = (row, keywords) => {
+const getFuzzyValue = (
+	row: Record<string, any>,
+	keywords: string[],
+): string => {
 	const keys = Object.keys(row);
 	// Find a key that contains one of the keywords (case insensitive)
 	const match = keys.find((key) =>
@@ -138,4 +141,38 @@ const getFuzzyValue = (row, keywords) => {
 	return match ? row[match] : "";
 };
 
-export { cleanName, extractData, extractTopField, getFuzzyValue };
+/**
+ * Extracts a researcher's scholar ID from a profile link.
+ * Supports Semantic Scholar (author IDs) and Google Scholar (user IDs).
+ *
+ * @param {string} link - The URL to extract the ID from
+ * @returns {string} The extracted ID or an empty string if not found
+ */
+const extractScholarId = (link: string): string => {
+	if (typeof link !== "string") return "";
+
+	// 1. Semantic Scholar (just numbers)
+	if (link.includes("semanticscholar.org")) {
+		const match = link.match(/author\/(?:[^\/]+\/)?(\d+)/);
+		return match ? match[1] : "";
+	}
+
+	// 2. Google Scholar (letters and numbers)
+	if (link.includes("user=")) {
+		const parts = link.split("user=");
+		if (parts.length > 1) {
+			return parts[1].split("&")[0];
+		}
+	}
+
+	return "";
+};
+
+export {
+	cleanName,
+	extractData,
+	extractTopField,
+	getFuzzyValue,
+	extractScholarId,
+};
+

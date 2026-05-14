@@ -4,6 +4,7 @@ import {
 	extractData,
 	extractTopField,
 	getFuzzyValue,
+	extractScholarId,
 } from "../extractors.js";
 
 describe("cleanName", () => {
@@ -599,5 +600,43 @@ describe("getFuzzyValue", () => {
 			const result = getFuzzyValue(row, ["linkedin"]);
 			expect(result).toBe("linkedin.com/in/johndoe");
 		});
+	});
+});
+
+describe("extractScholarId", () => {
+	it("should extract ID from Semantic Scholar link", () => {
+		expect(
+			extractScholarId("https://www.semanticscholar.org/author/12345"),
+		).toBe("12345");
+	});
+
+	it("should extract ID from Semantic Scholar link with name", () => {
+		expect(
+			extractScholarId("https://www.semanticscholar.org/author/John-Doe/12345"),
+		).toBe("12345");
+	});
+
+	it("should extract ID from Google Scholar link", () => {
+		expect(
+			extractScholarId("https://scholar.google.com/citations?user=ABCDEF12345"),
+		).toBe("ABCDEF12345");
+	});
+
+	it("should extract ID from Google Scholar link with other params", () => {
+		expect(
+			extractScholarId(
+				"https://scholar.google.com/citations?user=ABCDEF12345&hl=en",
+			),
+		).toBe("ABCDEF12345");
+	});
+
+	it("should return empty string for non-scholar links", () => {
+		expect(extractScholarId("https://example.com")).toBe("");
+	});
+
+	it("should return empty string for invalid inputs", () => {
+		expect(extractScholarId(null as any)).toBe("");
+		expect(extractScholarId(undefined as any)).toBe("");
+		expect(extractScholarId("")).toBe("");
 	});
 });

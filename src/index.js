@@ -38,9 +38,13 @@ import xlsx from 'xlsx';
 import { createClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
 import logger from "./middlewares/logger.js";
+import { errorHandler } from "./middlewares/error.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import healthRouter from './modules/health/health.routes.js';
 import feedbackRouter from './modules/feedback/feedback.routes.js';
+import researchersRouter from './modules/researchers/researchers.routes.js';
+
+import { extractTopField, extractData } from './utils/extractors.js';
 
 
 // --- APP CONFIGURATION ---
@@ -85,6 +89,8 @@ try {
 }
 
 app.use("/api/health", healthRouter);
+
+app.use("/api", researchersRouter);
 
 app.use((req, res, next) => {
 	if (
@@ -145,97 +151,7 @@ app.get('/local-search', (req, res) => res.sendFile(path.join(__dirname, 'public
  * Also returns 'activeCountryCodes' to color the map blue.
  */
 
-// ================================================================
-//  SECTION 1: LOCAL RESEARCHER DB API
-// ================================================================
 
-// 1. Upload Excel Route (Smart ID Extractor)
-app.post('/api/admin/upload-researchers',
-    isAdmin,
-    uploadTemp.single('file'),
-    async (req, res) => {
-
-    if (!req.file || !req.file.buffer) {
-        return res.status(400).json({error: "No file uploaded or invalid format"});
-    }
-    
-    const clearDb = req.body.clear_db === 'true';
-
-    try {
-        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-
-        if (clearDb) {
-            await supabase.from('academic_researchers').delete().neq('id', 0);
-        }
-
-        let researchersToInsert = [];
-        const sheetsEntries = Object.entries(workbook.Sheets);
-        
-        sheetsEntries.forEach(entry => {
-            const sheetName = entry.at(0);
-            const sheet = entry.at(1);
-            const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
-
-            for (let i = 1; i < rows.length; i++) {
-                const cols = rows.at(i);
-                if (!cols || cols.length === 0) continue;
-
-                const name = cols.at(0) || '';       
-                const affil = cols.at(1) || '';      
-                const subtopics = cols.at(2) || '';  
-                const link = cols.at(3) || '';       
-
-                if (typeof name !== 'string' || name.trim() === '' || name.toLowerCase().includes('name')) {
-                    continue;
-                }
-
-                // === extract ID ===
-                let scholar_id = '';
-                if (typeof link === 'string') {
-                    // 1. if Semantic Scholar (just numbers)
-                    if (link.includes('semanticscholar.org')) {
-                        const match = link.match(/author\/(\d+)/);
-                        if (match) scholar_id = match.at(1);
-                    } 
-                    // 2. if Google Scholar (letters and numbers)
-                    else if (link.includes('user=')) {
-                        const parts = link.split('user=');
-                        if (parts.length > 1) {
-                            scholar_id = parts.at(1).split('&').at(0);
-                        }
-                    }
-                }
-
-                const topicToSave = (sheetName && sheetName !== 'Sheet1') ? sheetName.trim() : (req.body.main_topic || 'Uncategorized');
-                
-                researchersToInsert.push({
-                    name, affiliation: affil, main_topic: topicToSave, subtopics, scholar_id
-                });
-            }
-        });
-        
-        // Batch Insert to Supabase
-        if (researchersToInsert.length > 0) {
-            await supabase.from('academic_researchers').insert(researchersToInsert);
-        }
-        
-        res.json({success: true, message: `Database synced! Added ${researchersToInsert.length} researchers.`});
-
-    } catch (err) {
-        console.error("Excel Parsing Error:", err);
-        res.status(500).json({error: "Failed to parse file."});
-    }
-});
-
-// 2. Fetch distinct Main Topics for the dropdown
-app.get('/api/local-researchers/main-topics', async (req, res) => {
-    const { data, error } = await supabase.from('academic_researchers').select('main_topic');
-    if (error) return res.status(500).json({error: error.message});
-    
-    // Get unique non-null topics
-    const topics = [...new Set(data.map(r => r.main_topic).filter(t => t && t.trim() !== ''))];
-    res.json(topics);
-});
 
 
     // بص لو حد هيعدل بعدي في كام نوت مهمه لحاجات مسحتهم و حاجات كان لازم تتضاف 
@@ -243,139 +159,6 @@ app.get('/api/local-researchers/main-topics', async (req, res) => {
     // بس كان فيه مشكلة اني هبقي مضطر احسب حسابات الداش بورد في الباك اند و ابعتها للفرونت فانا مش هعمل كده
     // طبعا المفروض اني كنت اخطط لده من الاول بس ما علينا لو لقيت نفسك مضطر ترجع لهنا يعني و تقلل الي بيتبعت للفرونت 
     //عدل بس هنا و خد بالك من تحديث الداش بورد  في الصفحة دي 
-
-
-// 3. New Specific Filter Endpoint
-app.get('/api/local-researchers/filter', async (req, res) => {
-    const { main_topic, subtopic, university, researcher, keywords } = req.query;
-    
-    let query = supabase.from('academic_researchers').select('*');
-    
-    if (main_topic) query = query.eq('main_topic', main_topic);
-    if (subtopic) query = query.ilike('subtopics', `%${subtopic}%`);
-    if (university) query = query.ilike('affiliation', `%${university}%`);
-    if (researcher) query = query.ilike('name', `%${researcher}%`);
-    
-    // --- TITLE KEYWORDS LOGIC ---
-    if (keywords) {
-        const kwArray = keywords.split(',').filter(k => k.trim() !== '');
-        if (kwArray.length > 0) {
-            // Using the 'titles' column
-            const orString = kwArray.map(kw => `titles.ilike.%${kw.trim()}%`).join(',');
-            query = query.or(orString);
-        }
-    }
-
-    const { data: rows, error } = await query;
-    
-    if (error) {
-        console.error("Filter Error:", error.message);
-        return res.status(500).json({error: error.message});
-    }
-
-    // --- DEDUPLICATION LOGIC ---
-    // This guarantees a researcher is never displayed twice.
-    const uniqueResearchers = new Map();
-    
-    rows.forEach(row => {
-        // Use scholar_id as the primary unique key. If empty, fallback to their name, then their DB id.
-        const uniqueKey = row.scholar_id || row.name || row.id;
-        
-        if (!uniqueResearchers.has(uniqueKey)) {
-            uniqueResearchers.set(uniqueKey, row);
-        }
-    });
-
-    const finalResults = Array.from(uniqueResearchers.values());
-    
-    // Send only the unique results to the frontend
-    res.json(finalResults);
-});
-
-// 4. Detailed Analyze (Smart ID or Name Search)
-app.post('/api/local-researchers/analyze', async (req, res) => {
-    const id = req.body.id;
-    
-    const { data: localData, error } = await supabase.from('academic_researchers').select('*').eq('id', id).single();
-    
-    if (error || !localData) {
-        return res.status(404).json({error: "Researcher not found in local DB"});
-    }
-    
-    try {
-        let s2AuthorData = null;
-        let authorIdToFetch = null;
-        const storedId = localData.scholar_id || '';
-
-        if (/^\d+$/.test(storedId)) {
-            console.log(`[Method] Using Direct Semantic Scholar ID: ${storedId}`);
-            authorIdToFetch = storedId;
-        } 
-        else {
-            console.log(`[Method] Google ID detected (${storedId}), falling back to Smart Name Search.`);
-            
-            let cleanQueryName = localData.name.split(',').at(0); 
-            
-            const titles = ["Professor", "Prof.", "Dr.", "Eng.", "PhD Candidate", "Associate Professor", "Assistant Professor", "MSc", "Ph.D."];
-            titles.forEach(t => {
-                cleanQueryName = cleanQueryName.replace(new RegExp(`\\b${t}\\b`, 'gi'), '');
-            });
-            
-            cleanQueryName = cleanQueryName.replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
-
-            const searchRes = await axios.get(`https://api.semanticscholar.org/graph/v1/author/search`, {
-                params: { query: cleanQueryName, limit: 1, fields: 'authorId' },
-                headers: { 'x-api-key': process.env.S2_API_KEY || '' }
-            }).catch(e => null);
-
-            if (searchRes && searchRes.data && searchRes.data.data && searchRes.data.data.length > 0) {
-                authorIdToFetch = searchRes.data.data.at(0).authorId;
-            }
-        }
-
-        if (authorIdToFetch) {
-            const resData = await axios.get(`https://api.semanticscholar.org/graph/v1/author/${authorIdToFetch}`, {
-                params: { fields: 'name,citationCount,hIndex,paperCount,url,papers.title,papers.year,papers.venue,papers.citationCount,papers.fieldsOfStudy,papers.authors,papers.url' },
-                headers: { 'x-api-key': process.env.S2_API_KEY || '' }
-            }).catch(e => null);
-            
-            if (resData && resData.data) {
-                s2AuthorData = resData.data;
-                s2AuthorData.primaryField = extractTopField(s2AuthorData.papers);
-            }
-        }
-
-        // (Collaborators)
-        let collaborators = [];
-        if (s2AuthorData && s2AuthorData.papers) {
-            const collabMap = new Map();
-            s2AuthorData.papers.forEach(p => {
-                if(p.authors) {
-                    p.authors.forEach(a => {
-                        // Don't count the researcher themselves
-                        if (a.authorId !== s2AuthorData.authorId && a.name) {
-                            // Use ID as key to be accurate
-                            if (!collabMap.has(a.authorId)) {
-                                collabMap.set(a.authorId, { name: a.name, id: a.authorId, count: 0 });
-                            }
-                            collabMap.get(a.authorId).count++;
-                        }
-                    });
-                }
-            });
-            
-            collaborators = Array.from(collabMap.values())
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 10); // Return top 10
-        }
-
-        res.json({ local: localData, author: s2AuthorData, collaborators: collaborators });
-        
-    } catch (e) {
-        console.error("Analyze Error:", e.message);
-        res.json({ local: localData, author: null, collaborators: [] });
-    }
-});
 
 
 // Get Filters & Map Status
@@ -1732,6 +1515,8 @@ app.post('/api/admin/upload-grad-projects', uploadTemp.single('file'), async (re
         res.status(500).json({ error: "Failed to upload projects: " + err.message });
     }
 });
+
+app.use(errorHandler);
 
 
 

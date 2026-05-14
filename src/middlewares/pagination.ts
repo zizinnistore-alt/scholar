@@ -1,5 +1,6 @@
-import type { NextFunction, Response, Request } from "express";
+import type { NextFunction, Response } from "express";
 import { z, ZodError } from "zod";
+import type { PaginatedRequest } from "../types/paginatedRequest.js";
 
 const PaginationSchema = z.object({
 	page: z
@@ -12,9 +13,9 @@ const PaginationSchema = z.object({
 	limit: z
 		.string()
 		.optional()
-		.default("10")
+		.default("20")
 		.transform(Number)
-		.pipe(z.number().int().min(1).max(50, "limit must be <= 50")),
+		.pipe(z.number().int().min(1).max(100, "limit must be <= 100")),
 
 	sortBy: z.string().optional().default("createdAt"),
 
@@ -22,7 +23,7 @@ const PaginationSchema = z.object({
 });
 
 export const paginationMiddleware = (
-	req: Request,
+	req: PaginatedRequest,
 	res: Response,
 	next: NextFunction,
 ): void => {

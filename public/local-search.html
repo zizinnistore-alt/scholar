@@ -213,8 +213,11 @@
         // ===========================
         async function initialLoad() {
             try {
-                const res = await fetch(`/api/local-researchers/filter`);
-                allData = await res.json();
+                let numbers = fetch(`/api/local-researchers/`);
+                let res = fetch(`/api/local-researchers/filter`);
+                [numbers, res] = await Promise.all([numbers, res]);
+
+                [allData, numbers] = await Promise.all([res.json(), numbers.json()]);
 
                 localResearcherMap.clear();
                 allData.forEach(r => {
@@ -223,18 +226,18 @@
 
                 populateSuggestions(allData);
                 runFilter();
-                updateHeroStats();
+                updateHeroStats(numbers);
             } catch (e) {
                 console.error("Init Error", e);
             }
         }
 
-        function updateHeroStats() {
-            document.getElementById('stat-researchers').textContent = allData.length;
-            const unis = new Set(allData.map(r => r.affiliation).filter(Boolean));
-            document.getElementById('stat-universities').textContent = unis.size;
-            const topics = new Set(allData.map(r => r.main_topic).filter(Boolean));
-            document.getElementById('stat-topics').textContent = topics.size;
+        function updateHeroStats(numbers) {
+            document.getElementById('stat-researchers').textContent = numbers.total_researchers ?? 0;
+            // const unis = new Set(allData.map(r => r.affiliation).filter(Boolean));
+            document.getElementById('stat-universities').textContent = numbers.total_universities ?? 0;
+            // const topics = new Set(allData.map(r => r.main_topic).filter(Boolean));
+            document.getElementById('stat-topics').textContent = numbers.total_topics ?? 0;
         }
 
         async function fetchMainTopics() {
