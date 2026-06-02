@@ -41,6 +41,7 @@ import logger from "./middlewares/logger.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import healthRouter from './modules/health/health.routes.js';
 import feedbackRouter from './modules/feedback/feedback.routes.js';
+import { extractTopField } from './utils/extractors.js';
 
 
 // --- APP CONFIGURATION ---
